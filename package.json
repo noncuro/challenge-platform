@@ -1,0 +1,46 @@
+{
+  "name": "challenge-platform",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.54.1",
+    "bcrypt": "^5.1.1",
+    "ioredis": "^5.4.1",
+    "next": "^14.2.7",
+    "pnpm": "^9.9.0",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.7",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.35.2",
+    "globals": "^15.9.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.2.10",
+    "postcss": "^8",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5",
+    "typescript-eslint": "^8.4.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": "eslint --cache --fix",
+    "*.{ts,js,css,md}": "prettier --write",
+    "*.js": "eslint --cache --fix",
+    "*.{js,css,md}": "prettier --write"
+  }
+}
