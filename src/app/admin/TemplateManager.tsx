@@ -1,83 +1,54 @@
-'use client';
-
-import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui';
-import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { TemplateModal } from './TemplateModal';
 
 interface Template {
-  id: string;
-  name: string;
-  content: string;
+    id: string;
+    name: string;
+    content: string;
 }
 
-const fetchTemplates = async (): Promise<Template[]> => {
-  const response = await fetch('/api/templates');
-  if (!response.ok) {
-    throw new Error('Failed to fetch templates');
-  }
-  return response.json();
-};
-
-const deleteTemplate = async (id: string): Promise<void> => {
-  const response = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
-  if (!response.ok) {
-    throw new Error('Failed to delete template');
-  }
-};
-
 export function TemplateManager() {
-  const queryClient = useQueryClient();
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(true);
+    const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
 
-  const { data: templates, isLoading, error } = useQuery({
-    queryKey: ['templates'],
-    queryFn: fetchTemplates,
-  });
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteTemplate,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] });
-    },
-  });
+    const fetchTemplates = async () => {
+        try {
+            const response = await fetch('/api/templates');
+            if (response.ok) {
+                const data = await response.json();
+                setTemplates(data);
+            } else {
+                console.error('Failed to fetch templates');
+            }
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+        }
+    };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error fetching templates</div>;
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setCurrentTemplate(null);
+        fetchTemplates();
+    };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Manage Templates</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Link href="/admin/create-template">
-          <Button>Add New Template</Button>
-        </Link>
-        {templates?.map(template => (
-          <Card key={template.id} className="mt-4">
+    return (
+        <Card>
             <CardHeader>
-              <CardTitle>{template.name}</CardTitle>
+                <CardTitle>Manage Templates</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-100 p-4 rounded">
-                <ReactMarkdown>{template.content}</ReactMarkdown>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Link href={`/admin/edit-template?id=${template.id}`}>
-                  <Button className="mr-2">Edit</Button>
-                </Link>
-                <Button 
-                  onClick={() => deleteMutation.mutate(template.id)}
-                  disabled={deleteMutation.isLoading}
-                >
-                  Delete
-                </Button>
-              </div>
+                <TemplateModal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    template={currentTemplate}
+                />
             </CardContent>
-          </Card>
-        ))}
-      </CardContent>
-    </Card>
-  );
+        </Card>
+    );
 }

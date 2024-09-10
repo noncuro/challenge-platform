@@ -1,10 +1,11 @@
-import Admin from '../admin';
-import { TemplateManager } from './TemplateManager';
+import React from 'react';
+import TemplateManager from './TemplateManager';
 
 export default function TemplatesPage() {
     return (
-        <Admin isTemplatesPage={true}>
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">Challenge Templates</h1>
             <TemplateManager />
-        </Admin>
+        </div>
     );
 }

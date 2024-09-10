@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 
 interface CandidateData {
@@ -13,28 +12,34 @@ interface CandidateData {
     endTime: number | null;
 }
 
-const fetchCandidates = async (): Promise<CandidateData[]> => {
-    const response = await fetch('/api/candidate/all');
-    if (!response.ok) {
-        throw new Error('Failed to fetch candidates');
-    }
-    return response.json();
-};
-
 export const CandidateResponses = () => {
-    const { data: candidates, isLoading, error } = useQuery({
-        queryKey: ['candidates'],
-        queryFn: fetchCandidates,
-        refetchInterval: 30000, // Refetch every 30 seconds
-    });
+    const [candidates, setCandidates] = useState<CandidateData[]>([]);
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error fetching candidates</div>;
+    useEffect(() => {
+        const fetchCandidates = async () => {
+            try {
+                const response = await fetch('/api/candidate/all');
+                if (response.ok) {
+                    const data = await response.json();
+                    setCandidates(data);
+                } else {
+                    console.error('Failed to fetch candidates');
+                }
+            } catch (error) {
+                console.error('Error fetching candidates:', error);
+            }
+        };
+
+        fetchCandidates();
+        const interval = setInterval(fetchCandidates, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div>
             <h2 className="text-xl font-bold mb-4">Candidate Responses</h2>
-            {candidates?.map((candidate, index) => (
+            {candidates.map((candidate, index) => (
                 <Card key={index} className="mb-4">
                     <CardHeader>
                         <CardTitle>{candidate.email}</CardTitle>

@@ -1,12 +1,10 @@
-import { Button, Input, Textarea } from "@/components/ui";
-import { createRedisClient } from "../api/utils";
-import { useState } from "react";
+'use client';
+
+import React, { useState, useEffect } from "react";
 import { CreateChallengeForm } from "./createChallenge";
 import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/components/ui';
 import ReactMarkdown from 'react-markdown';
-import { TemplateManager } from "./templates/TemplateManager";
-import Link from 'next/link'; // Import Link from next/link
-import { Button as ButtonComponent } from '@/components/ui';
+import { TemplateManager } from "./TemplateManager";
 
 interface CandidateData {
     email: string;
@@ -40,13 +38,9 @@ const formatLateness = (lateness: number) => {
     }
 };
 
-interface AdminProps {
-    isTemplatesPage?: boolean;
-}
-
-export default function Admin({ isTemplatesPage = false }: AdminProps) {
-    const [activeForm, setActiveForm] = useState<ActiveForm>('none');
+export default function Admin() {
     const [candidates, setCandidates] = useState<CandidateData[]>([]);
+    const [activeForm, setActiveForm] = useState<ActiveForm>('none');
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchCandidates = async () => {
@@ -69,10 +63,6 @@ export default function Admin({ isTemplatesPage = false }: AdminProps) {
         return () => clearInterval(interval);
     }, []);
 
-    const refreshChallenges = () => {
-        fetchCandidates();
-    };
-
     const filteredCandidates = candidates.filter(candidate =>
         candidate.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -82,103 +72,92 @@ export default function Admin({ isTemplatesPage = false }: AdminProps) {
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Admin Dashboard</h1>
                 <div className="space-x-2">
-                    {activeForm !== 'none' && !isTemplatesPage && (
-                        <ButtonComponent onClick={() => setActiveForm('none')}>
-                            All Submissions
-                        </ButtonComponent>
-                    )}
-                    {activeForm !== 'createChallenge' && !isTemplatesPage && (
-                        <ButtonComponent onClick={() => setActiveForm('createChallenge')}>
-                            Create Challenge
-                        </ButtonComponent>
-                    )}
-                    {!isTemplatesPage && (
-                        <Link href="/admin/templates">
-                            <ButtonComponent>
-                                Manage Templates
-                            </ButtonComponent>
-                        </Link>
+                    <Button onClick={() => setActiveForm(activeForm === 'createChallenge' ? 'none' : 'createChallenge')}>
+                        {activeForm === 'createChallenge' ? 'Cancel' : 'Create Challenge'}
+                    </Button>
+                    {activeForm !== 'createChallenge' && (
+                        <Button onClick={() => setActiveForm('manageTemplates')}>
+                            Manage Templates
+                        </Button>
                     )}
                 </div>
             </div>
 
-            {isTemplatesPage ? (
+            {activeForm === 'createChallenge' && (
+                <Card className="mb-4">
+                    <CardHeader>
+                        <CardTitle>Create New Challenge</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <CreateChallengeForm onSuccess={() => setActiveForm('none')} />
+                    </CardContent>
+                </Card>
+            )}
+
+            {activeForm === 'manageTemplates' && (
                 <TemplateManager />
-            ) : (
+            )}
+
+            {activeForm === 'none' && (
                 <>
-                    {activeForm === 'createChallenge' && (
-                        <Card className="mb-4">
-                            <CardHeader>
-                                <CardTitle>Create New Challenge</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <CreateChallengeForm onSuccess={() => setActiveForm('none')} onChallengeCreated={refreshChallenges} />
-                            </CardContent>
-                        </Card>
-                    )}
+                    <div className="flex justify-between items-center mb-4">
+                        <Input
+                            type="text"
+                            placeholder="Search candidates..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-64"
+                        />
+                        <Button onClick={fetchCandidates}>
+                            Refresh
+                        </Button>
+                    </div>
 
-                    {activeForm === 'none' && (
-                        <>
-                            <div className="flex justify-between items-center mb-4">
-                                <Input
-                                    type="text"
-                                    placeholder="Search candidates..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-64"
-                                />
-                                <ButtonComponent onClick={refreshChallenges}>
-                                    Refresh
-                                </ButtonComponent>
-                            </div>
+                    <div className="space-y-4">
+                        {filteredCandidates.map((candidate, index) => {
+                            const lateness = candidate.startTime && candidate.endTime && candidate.submissionTime
+                                ? calculateLateness(candidate.startTime, candidate.endTime, candidate.submissionTime, candidate.duration)
+                                : null;
 
-                            <div className="space-y-4">
-                                {filteredCandidates.map((candidate, index) => {
-                                    const lateness = candidate.startTime && candidate.endTime && candidate.submissionTime
-                                        ? calculateLateness(candidate.startTime, candidate.endTime, candidate.submissionTime, candidate.duration)
-                                        : null;
-
-                                    return (
-                                        <Card key={index}>
-                                            <CardHeader>
-                                                <CardTitle>{candidate.email}</CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <p><strong>Status:</strong> {candidate.isStarted ? 'Started' : 'Not Started'}</p>
-                                                        {candidate.startTime && (
-                                                            <p><strong>Started:</strong> {new Date(candidate.startTime).toLocaleString()}</p>
-                                                        )}
-                                                        {candidate.endTime && (
-                                                            <p><strong>End Time:</strong> {new Date(candidate.endTime).toLocaleString()}</p>
-                                                        )}
-                                                        {candidate.submission && (
-                                                            <p><strong>Submitted:</strong> {new Date(candidate.submissionTime!).toLocaleString()}</p>
-                                                        )}
-                                                        {lateness !== null && lateness > 0 && (
-                                                            <p className="text-red-500"><strong>Late by:</strong> {formatLateness(lateness)}</p>
-                                                        )}
+                            return (
+                                <Card key={index}>
+                                    <CardHeader>
+                                        <CardTitle>{candidate.email}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p><strong>Status:</strong> {candidate.isStarted ? 'Started' : 'Not Started'}</p>
+                                                {candidate.startTime && (
+                                                    <p><strong>Started:</strong> {new Date(candidate.startTime).toLocaleString()}</p>
+                                                )}
+                                                {candidate.endTime && (
+                                                    <p><strong>End Time:</strong> {new Date(candidate.endTime).toLocaleString()}</p>
+                                                )}
+                                                {candidate.submission && (
+                                                    <p><strong>Submitted:</strong> {new Date(candidate.submissionTime!).toLocaleString()}</p>
+                                                )}
+                                                {lateness !== null && lateness > 0 && (
+                                                    <p className="text-red-500"><strong>Late by:</strong> {formatLateness(lateness)}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                {candidate.submission ? (
+                                                    <div className="bg-gray-100 p-4 rounded mt-2 max-h-60 overflow-y-auto">
+                                                        <ReactMarkdown>{candidate.submission}</ReactMarkdown>
                                                     </div>
-                                                    <div>
-                                                        {candidate.submission ? (
-                                                            <div className="bg-gray-100 p-4 rounded mt-2 max-h-60 overflow-y-auto">
-                                                                <ReactMarkdown>{candidate.submission}</ReactMarkdown>
-                                                            </div>
-                                                        ) : (
-                                                            <p>No submission yet</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    )}
+                                                ) : (
+                                                    <p>No submission yet</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
                 </>
             )}
         </div>
-    )
+    );
 }
