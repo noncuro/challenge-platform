@@ -3,21 +3,68 @@
 import { Textarea, Button, Input } from "@/components/ui";
 import { useState } from "react";
 import { formatDuration } from "../candidate/TimedSubmissionPlatform";
+import { Button, Input } from "@/components/ui";
+import React ,{ useState, useEffect } from "react";
+import dynamic from 'next/dynamic';
+import ReactMarkdown from 'react-markdown';
+import 'react-markdown-editor-lite/lib/index.css';
 
-export const CreateChallengeForm = () => {
-    const [email, setEmail] = useState('');
-    const [duration, setDuration] = useState(0);
+const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
+  ssr: false
+});
+
+interface CreateChallengeFormProps {
+    onSuccess?: () => void;
+    onChallengeCreated?: () => void;
+}
+
+interface Template {
+    id: string;
+    name: string;
+    content: string;
+}
+
+export const CreateChallengeForm: React.FC<CreateChallengeFormProps> = ({ onSuccess, onChallengeCreated }) => {
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState<string>('');
     const [challengeDescription, setChallengeDescription] = useState('');
     const [token, setToken] = useState('');
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const response = await fetch('/api/challenge/create', {
-            method: 'POST',
-            body: JSON.stringify({ email, duration, challengeDescription }),
-        });
-        const data = await response.json();
-        setToken(data.token);
-    }
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const response = await fetch('/api/challenge/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    templateId: selectedTemplate,
+                    description: challengeDescription,
+                    duration,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Challenge created:', data);
+                if (onSuccess) onSuccess();
+                if (onChallengeCreated) onChallengeCreated();
+            } else {
+                const errorData = await response.json();
+                setError(errorData.message || 'Failed to create challenge');
+            }
+        } catch (error) {
+            console.error('Error creating challenge:', error);
+            setError('An unexpected error occurred');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
