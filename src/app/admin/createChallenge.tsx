@@ -1,13 +1,14 @@
 'use client';
 
 import { Textarea, Button, Input, Select } from "@/components/ui";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { formatDuration } from "../candidate/TimedSubmissionPlatform";
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import React from 'react';
 import 'react-markdown-editor-lite/lib/index.css';
 import { useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -62,121 +63,131 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, challengeU
   );
 };
 
+const fetchTemplates = async (): Promise<Template[]> => {
+  const response = await fetch('/api/templates');
+  if (!response.ok) {
+    throw new Error('Failed to fetch templates');
+  }
+  return response.json();
+};
+
+const createChallenge = async (challengeData: { email: string; duration: number; challengeDescription: string }) => {
+  const response = await fetch('/api/challenge/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(challengeData),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create challenge');
+  }
+  return response.json();
+};
+
 export const CreateChallengeForm = () => {
-    const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [duration, setDuration] = useState(0);
-    const [challengeDescription, setChallengeDescription] = useState('');
-    const [token, setToken] = useState('');
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState('');
+  const [duration, setDuration] = useState(0);
+  const [challengeDescription, setChallengeDescription] = useState('');
+  const [token, setToken] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        fetchTemplates();
-    }, []);
+  const { data: templates = [] } = useQuery({
+    queryKey: ['templates'],
+    queryFn: fetchTemplates,
+  });
 
-    const fetchTemplates = async () => {
-        try {
-            const response = await fetch('/api/templates');
-            if (response.ok) {
-                const data = await response.json();
-                setTemplates(data);
-            } else {
-                console.error('Failed to fetch templates');
-            }
-        } catch (error) {
-            console.error('Error fetching templates:', error);
-        }
-    };
+  const createChallengeMutation = useMutation({
+    mutationFn: createChallenge,
+    onSuccess: (data) => {
+      setToken(data.token);
+      setIsModalOpen(true);
+    },
+  });
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const response = await fetch('/api/challenge/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-                email, 
-                duration, 
-                challengeDescription: selectedTemplate ? selectedTemplate.content : challengeDescription 
-            }),
-        });
-        const data = await response.json();
-        setToken(data.token);
-        setIsModalOpen(true);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    createChallengeMutation.mutate({
+      email,
+      duration,
+      challengeDescription: selectedTemplate ? selectedTemplate.content : challengeDescription,
+    });
+  };
+
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const templateId = e.target.value;
+    const template = templates.find(t => t.id === templateId);
+    setSelectedTemplate(template || null);
+    if (template) {
+      setChallengeDescription(template.content);
+    } else {
+      setChallengeDescription('');
     }
+  };
 
-    const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const templateId = e.target.value;
-        const template = templates.find(t => t.id === templateId);
-        setSelectedTemplate(template || null);
-        if (template) {
-            setChallengeDescription(template.content);
-        } else {
-            setChallengeDescription('');
-        }
+  const handleTemplateEdit = ({ text }: { text: string }) => {
+    if (selectedTemplate) {
+      setSelectedTemplate({ ...selectedTemplate, content: text });
+      setChallengeDescription(text);
+    } else {
+      setChallengeDescription(text);
     }
+  };
 
-    const handleTemplateEdit = ({ text }: { text: string }) => {
-        if (selectedTemplate) {
-            setSelectedTemplate({ ...selectedTemplate, content: text });
-            setChallengeDescription(text);
-        } else {
-            setChallengeDescription(text);
-        }
-    }
+  const resetForm = () => {
+    setEmail('');
+    setDuration(0);
+    setChallengeDescription('');
+    setSelectedTemplate(null);
+    setToken('');
+  };
 
-    const resetForm = () => {
-        setEmail('');
-        setDuration(0);
-        setChallengeDescription('');
-        setSelectedTemplate(null);
-        setToken('');
-    }
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    resetForm();
+    router.push('/admin/challenges');
+  };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        resetForm();
-        router.push('/admin/challenges');  // Redirect to all challenges screen
-    }
+  const challengeUrl = `http://localhost:3000/candidate?token=${token}`;
 
-    const challengeUrl = `http://localhost:3000/candidate?token=${token}`;
-
-    return (
-        <div className="max-w-3xl mx-auto">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <Input type="text" name="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <div className="flex gap-2 items-center">
-                    <Input type="number" name="duration" placeholder="Duration" value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} />
-                    <span>{formatDuration(duration)}</span>
-                </div>
-                <Select 
-                    onChange={handleTemplateChange}
-                    value={selectedTemplate?.id || ''}
-                >
-                    <option value="">Select a template</option>
-                    {templates.map(template => (
-                        <option key={template.id} value={template.id}>{template.name}</option>
-                    ))}
-                </Select>
-                <div>
-                    <h3 className="font-bold mb-2">Challenge Description:</h3>
-                    <MdEditor
-                        style={{ height: '400px' }}
-                        renderHTML={text => <ReactMarkdown>{text}</ReactMarkdown>}
-                        onChange={handleTemplateEdit}
-                        value={selectedTemplate ? selectedTemplate.content : challengeDescription}
-                    />
-                </div>
-                <Button type="submit">Create Challenge</Button>
-            </form>
-            <SuccessModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                challengeUrl={challengeUrl}
-            />
+  return (
+    <div className="max-w-3xl mx-auto">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Input type="text" name="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="flex gap-2 items-center">
+          <Input type="number" name="duration" placeholder="Duration" value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} />
+          <span>{formatDuration(duration)}</span>
         </div>
-    )
-}
+        <Select 
+          onChange={handleTemplateChange}
+          value={selectedTemplate?.id || ''}
+        >
+          <option value="">Select a template</option>
+          {templates.map(template => (
+            <option key={template.id} value={template.id}>{template.name}</option>
+          ))}
+        </Select>
+        <div>
+          <h3 className="font-bold mb-2">Challenge Description:</h3>
+          <MdEditor
+            style={{ height: '400px' }}
+            renderHTML={text => <ReactMarkdown>{text}</ReactMarkdown>}
+            onChange={handleTemplateEdit}
+            value={selectedTemplate ? selectedTemplate.content : challengeDescription}
+          />
+        </div>
+        <Button type="submit" disabled={createChallengeMutation.isPending}>
+          {createChallengeMutation.isPending ? 'Creating...' : 'Create Challenge'}
+        </Button>
+      </form>
+      <SuccessModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        challengeUrl={challengeUrl}
+      />
+    </div>
+  );
+};

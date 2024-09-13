@@ -1,25 +1,19 @@
+'use client';
+
 import { Button, Input, Textarea } from "@/components/ui";
-import { createRedisClient } from "../api/utils";
-import { useState } from "react";
 import { CreateChallengeForm } from "./createChallenge";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
-export default async function Admin() {
-    const redisClient = createRedisClient();
-    const challenges = await redisClient.keys('challenge:*');
-    const challengeStatuses = challenges.length ? await redisClient.mget(...challenges) : [];
+const queryClient = new QueryClient();
 
+export default function Admin() {
     return (
-        <div>
-            <h1 className="text-2xl font-bold mb-4">Admin</h1>
-            <CreateChallengeForm />
-            <div className="flex flex-col gap-4">
-                {challengeStatuses.map((challengeStatus, index) => (
-                    <div key={challenges[index]}>
-                        <h2 className="text-xl font-bold">{challenges[index]}</h2>
-                        <p>{challengeStatus}</p>
-                    </div>
-                ))}
+        <QueryClientProvider client={queryClient}>
+            <div>
+                <h1 className="text-2xl font-bold mb-4">Admin</h1>
+                <CreateChallengeForm />
             </div>
-        </div>
-    )
+        </QueryClientProvider>
+    );
 }
