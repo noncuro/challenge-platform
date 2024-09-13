@@ -1,23 +1,36 @@
-import { NextResponse } from 'next/server';
-import { createRedisClient, getChallengeFromCookie } from '@/app/api/utils';
+import { NextResponse } from "next/server";
+import { createRedisClient, getChallengeStatusFromRedis } from "../../utils";
+// import bcrypt from 'bcrypt';
+import { cookies } from "next/headers";
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    
-    const redisClient = createRedisClient();
+export async function GET() {
+  const redisClient = createRedisClient();
 
-    try {
-        const challenge = await getChallengeFromCookie(redisClient);
+  try {
+    const email = cookies().get("email")?.value;
+    const authKey = cookies().get("authKey")?.value;
 
-        if (!challenge) {
-            return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
-        }
-
-        return NextResponse.json(challenge, { status: 200 });
-    } catch (error) {
-        console.error('Error fetching challenge status:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    } finally {
-        await redisClient.quit();
+    if (!email || !authKey) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const status = await getChallengeStatusFromRedis(email, redisClient);
+
+    if (!status) {
+      return NextResponse.json(
+        { error: "Challenge not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(status);
+  } catch (error) {
+    console.error("Error fetching challenge status:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  } finally {
+    await redisClient.quit();
+  }
 }

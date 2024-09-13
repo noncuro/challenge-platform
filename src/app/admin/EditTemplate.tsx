@@ -4,6 +4,13 @@ import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Input } from '@/components/ui';
+import dynamic from 'next/dynamic';
+import 'react-markdown-editor-lite/lib/index.css';
+import ReactMarkdown from 'react-markdown';
+
+const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
+  ssr: false
+});
 
 interface Template {
     id: string;
@@ -51,25 +58,33 @@ const EditTemplate: React.FC = () => {
         }
     };
 
+    const handleEditorChange = ({ text }: { text: string }) => {
+        if (template) {
+            queryClient.setQueryData(['template', id], { ...template, content: text });
+        }
+    };
+
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error loading template</div>;
     if (!template) return <div>No template found</div>;
 
     return (
-        <div>
-            <h1>Edit Template</h1>
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">Edit Template</h1>
             <Input
                 type="text"
                 value={template.name}
                 onChange={(e) => queryClient.setQueryData(['template', id], { ...template, name: e.target.value })}
                 placeholder="Template Name"
+                className="mb-4"
             />
-            <textarea
+            <MdEditor
                 value={template.content}
-                onChange={(e) => queryClient.setQueryData(['template', id], { ...template, content: e.target.value })}
-                placeholder="Template Content"
+                onChange={handleEditorChange}
+                style={{ height: '500px' }}
+                renderHTML={(text) => <ReactMarkdown>{text}</ReactMarkdown>}
             />
-            <Button onClick={handleSave} disabled={mutation.isLoading}>
+            <Button onClick={handleSave} disabled={mutation.isLoading} className="mt-4">
                 {mutation.isLoading ? 'Saving...' : 'Save'}
             </Button>
         </div>
