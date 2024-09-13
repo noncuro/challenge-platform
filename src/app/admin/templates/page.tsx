@@ -1,14 +1,17 @@
+'use client';
+
 import React from 'react';
 import { TemplateManager } from './TemplateManager';
-import QueryProvider from '@/app/QueryProvider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 export default function TemplatesPage() {
     return (
-        <QueryProvider>
+        <QueryClientProvider client={queryClient}>
             <div className="p-4">
-                {/* <h1 className="text-2xl font-bold mb-4">Challenge Templates</h1> */}
                 <TemplateManager />
             </div>
-        </QueryProvider>
+        </QueryClientProvider>
     );
 }
