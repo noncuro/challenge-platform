@@ -22,7 +22,7 @@ export default function RootLayout({
         <body className={inter.className}>
           <nav className="bg-gray-100 p-4">
             <ul className="flex space-x-4">
-              <li><a href="/candidate/1" className="text-blue-500 hover:underline">Home</a></li>
+              <li><a href="/" className="text-blue-500 hover:underline">Home</a></li>
               <li><a href="/admin" className="text-blue-500 hover:underline">Admin</a></li>
             </ul>
           </nav>

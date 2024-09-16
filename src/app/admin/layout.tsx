@@ -1,10 +1,27 @@
 import Link from 'next/link';
+import {cookies} from "next/headers";
+import {Login} from "@/app/admin/login";
+import {createRedisClient} from "@/app/api/utils";
+import {checkAdminAuth} from "@/app/api/auth/admin/route";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+
+  const adminAuthKey = cookies().get('adminAuthKey')?.value;
+
+  if (!adminAuthKey) {
+    return <Login />;
+  }
+
+  const redisClient = createRedisClient();
+
+  if (!checkAdminAuth(adminAuthKey, redisClient)){
+    return "Something went wrong"
+  }
+
   return (
     <div>
       <nav className="bg-gray-100 p-4 mb-4">

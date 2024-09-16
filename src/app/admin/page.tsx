@@ -7,17 +7,7 @@ import Admin from "./admin";
 
 export default function AdminPage() {
 
-  const adminAuthKey = cookies().get('adminAuthKey')?.value;  
 
-  if (!adminAuthKey) {
-    return <Login />;
-  }
-
-  const redisClient = createRedisClient();
-
-  if (!checkAdminAuth(adminAuthKey, redisClient)){
-    return "Something went wrong"
-  }
 
     return (
       <div className="p-4">
