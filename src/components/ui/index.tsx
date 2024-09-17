@@ -114,15 +114,39 @@ export const Input: React.FC<InputProps> = ({ className = '', disabled = false, 
   );
 };
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+export { Select } from './Select';
 
-export const Select: React.FC<SelectProps> = ({ children, className = '', ...props }) => {
+interface DialogProps extends React.HTMLAttributes<HTMLDivElement> {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const Dialog: React.FC<DialogProps> = ({ children, open, onOpenChange, className = '', ...props }) => {
+  if (!open) return null;
+
   return (
-    <select
-      className={`w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${className}`}
-      {...props}
-    >
-      {children}
-    </select>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50" onClick={() => onOpenChange(false)}>
+      <div className={`bg-white rounded-lg shadow-xl ${className}`} onClick={(e) => e.stopPropagation()} {...props}>
+        {children}
+      </div>
+    </div>
   );
 };
+
+export const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ children, className = '', ...props }) => (
+  <div className={`p-6 ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ children, className = '', ...props }) => (
+  <div className={`mb-4 ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+export const DialogTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ children, className = '', ...props }) => (
+  <h2 className={`text-2xl font-bold ${className}`} {...props}>
+    {children}
+  </h2>
+);

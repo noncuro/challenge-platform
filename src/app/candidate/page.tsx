@@ -7,7 +7,8 @@ export default async function CandidatePage() {
 
     const email = cookies().get('email')?.value;
     const authKey = cookies().get('authKey')?.value;
-
+    console.log(email, authKey);
+    
     if(!email || !authKey){
         return <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">Timed Submission Platform</h1>

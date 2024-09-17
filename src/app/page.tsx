@@ -8,6 +8,7 @@ export default async function Home({searchParams}: {searchParams: {token: string
   async function setCookie() {
     "use server"
     const { token, email } = searchParams;
+    console.log(token, email);
     setAuthCookie(token, email);
   }
   const redisClient = createRedisClient();
@@ -15,7 +16,7 @@ export default async function Home({searchParams}: {searchParams: {token: string
   const { token, email } = searchParams;
   if(await getChallengeStatusFromRedis(searchParams.email, redisClient)){
     return <div className="p-4">
-      Signed in. Go here: <Link href="/candidate">Candidate</Link>
+      Signed in. Go here: <Link href="/">Candidate</Link>
     </div>
   }
 

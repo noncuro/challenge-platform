@@ -13,6 +13,7 @@ export default function AdminLayout({
   const adminAuthKey = cookies().get('adminAuthKey')?.value;
 
   if (!adminAuthKey) {
+    alert("Please login");
     return <Login />;
   }
 
