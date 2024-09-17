@@ -151,7 +151,7 @@ export const CreateChallengeForm = () => {
     router.push('/admin/challenges');
   };
 
-  const challengeUrl = `http://localhost:3000/candidate?token=${token}`;
+  const challengeUrl = `http://localhost:3000/candidate?token=${token}&email=${email}`;
 
   return (
     <div className="max-w-3xl mx-auto">
