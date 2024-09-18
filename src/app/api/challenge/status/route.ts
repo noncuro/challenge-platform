@@ -3,6 +3,8 @@ import { createRedisClient, getChallengeStatusFromRedis } from "../../utils";
 // import bcrypt from 'bcrypt';
 import { cookies } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const redisClient = createRedisClient();
 

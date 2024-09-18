@@ -1,7 +1,9 @@
-import { useParams } from 'next/navigation'
 import { createRedisClient, getChallengeStatusFromRedis } from './api/utils';
-import { checkAuth, setAuthCookie } from './api/auth/route';
+import { checkAuth, setAuthCookie } from './api/utils/auth';
 import Link from 'next/link';
+import React from 'react';
+
+export const dynamic = 'force-dynamic';
 
 export default async function Home({searchParams}: {searchParams: {token: string, email: string}}) {
 
@@ -14,12 +16,13 @@ export default async function Home({searchParams}: {searchParams: {token: string
   const redisClient = createRedisClient();
 
   const { token, email } = searchParams;
-  if(await getChallengeStatusFromRedis(searchParams.email, redisClient)){
-    return <div className="p-4">
-      Signed in. Go here: <Link href="/">Candidate</Link>
-    </div>
+  if (await getChallengeStatusFromRedis(searchParams.email, redisClient)) {
+    return (
+      <div className="p-4">
+        Signed in. Go here: <Link href="/">Candidate</Link>
+      </div>
+    );
   }
-
 
   if (!token || !email) {
     return <div className="p-4">

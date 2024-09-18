@@ -26,7 +26,7 @@ const fetchTemplate = async (id: string): Promise<Template> => {
 
 const updateTemplate = async (template: Template): Promise<void> => {
     const response = await fetch(`/api/templates`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(template),
     });
@@ -60,7 +60,17 @@ const EditTemplate: React.FC = () => {
 
     const handleEditorChange = ({ text }: { text: string }) => {
         if (template) {
-            queryClient.setQueryData(['template', id], { ...template, content: text });
+            queryClient.setQueryData(['template', id], (oldData: Template | undefined) => {
+                return oldData ? { ...oldData, content: text } : undefined;
+            });
+        }
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (template) {
+            queryClient.setQueryData(['template', id], (oldData: Template | undefined) => {
+                return oldData ? { ...oldData, name: e.target.value } : undefined;
+            });
         }
     };
 
@@ -74,7 +84,7 @@ const EditTemplate: React.FC = () => {
             <Input
                 type="text"
                 value={template.name}
-                onChange={(e) => queryClient.setQueryData(['template', id], { ...template, name: e.target.value })}
+                onChange={handleNameChange}
                 placeholder="Template Name"
                 className="mb-4"
             />
@@ -84,8 +94,8 @@ const EditTemplate: React.FC = () => {
                 style={{ height: '500px' }}
                 renderHTML={(text) => <ReactMarkdown>{text}</ReactMarkdown>}
             />
-            <Button onClick={handleSave} disabled={mutation.isLoading} className="mt-4">
-                {mutation.isLoading ? 'Saving...' : 'Save'}
+            <Button onClick={handleSave} disabled={mutation.isPending} className="mt-4">
+                {mutation.isPending ? 'Saving...' : 'Save'}
             </Button>
         </div>
     );

@@ -1,11 +1,8 @@
 "use client";
-import {Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Textarea} from '@/components/ui';
-import {useEffect, useMemo, useRef, useState} from 'react';
-import {useParams} from 'next/navigation';
+import {Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle} from '@/components/ui';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider} from '@tanstack/react-query';
-
-
-
+import {MarkdownViewer} from '@/components/MarkdownViewer';
 
 export const formatDuration = (durationInSeconds: number): string => {
     const days = Math.floor(durationInSeconds / (24 * 60 * 60));
@@ -21,8 +18,6 @@ export const formatDuration = (durationInSeconds: number): string => {
 
     return parts.join(' ');
 };
-
-
 
 const startChallenge = async (): Promise<{ success: boolean; status: ChallengeStatus }> => {
     // Check if challenge is already started
@@ -44,6 +39,7 @@ const submitChallenge = async (submission: string): Promise<{
     success: boolean;
     isOvertime: boolean;
 } & ChallengeStatus> => {
+    console.log(submission);
     const response = await fetch(`/api/challenge/submit`, {
         method: 'POST',
         headers: {
@@ -239,8 +235,7 @@ export const TimedSubmissionPlatform = () => {
                             </div>
                             <Alert className="mb-4 bg-black border-green-700 border">
                                 <AlertDescription>
-                                    <div dangerouslySetInnerHTML={{__html: challengeStatus.challengeDescription || ""}}
-                                         className="text-green-400"/>
+                                    <MarkdownViewer content={challengeStatus.challengeDescription || ""} />
                                 </AlertDescription>
                             </Alert>
                             {challengeStatus.submission && (
@@ -251,10 +246,10 @@ export const TimedSubmissionPlatform = () => {
                                     </AlertDescription>
                                 </Alert>
                             )}
-                            <Textarea
+                            <textarea
                                 placeholder="Enter your submission here..."
                                 value={submission}
-                                onChange={(e) => !isOvertime || !challengeStatus.submission ? setSubmission(e.target.value) : null}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => !isOvertime || !challengeStatus.submission ? setSubmission(e.target.value) : null}
                                 className={`w-full h-40 mb-4 bg-black text-green-400 border-green-700 focus:border-green-500 placeholder-green-700 ${isOvertime && challengeStatus.submission ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={isOvertime && challengeStatus.submission ? true : false}
                             />

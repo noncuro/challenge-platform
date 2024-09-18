@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/components/ui';
 import dynamic from 'next/dynamic';
-import ReactMarkdown from 'react-markdown';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MarkdownViewer } from '@/components/MarkdownViewer';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -140,11 +140,10 @@ export function TemplateManager() {
                       value={selectedTemplate.content}
                       onChange={handleEditorChange}
                       style={{ height: '400px' }}
+                      renderHTML={(text) => <MarkdownViewer content={text} />}
                     />
                   ) : (
-                    <div className="prose max-w-none">
-                      <ReactMarkdown>{selectedTemplate.content}</ReactMarkdown>
-                    </div>
+                    <MarkdownViewer content={selectedTemplate.content} />
                   )}
                   <div className="mt-4 space-x-2">
                     {isEditing ? (
@@ -181,6 +180,7 @@ export function TemplateManager() {
                 value={newTemplateContent}
                 onChange={({ text }) => setNewTemplateContent(text)}
                 style={{ height: '300px' }}
+                renderHTML={text => <MarkdownViewer content={text} />}
               />
               <div className="mt-4 space-x-2">
                 <Button onClick={handleAddTemplate}>Add Template</Button>

@@ -111,7 +111,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose })
             <Card className="w-3/4 h-3/4 overflow-auto">
                 <CardHeader className="flex justify-between items-center">
                     <CardTitle className="text-2xl">Challenge Templates</CardTitle>
-                    <Button onClick={onClose} variant="secondary">Close</Button>
+                    <Button onClick={onClose} variant="outline">Close</Button>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-3 gap-6">

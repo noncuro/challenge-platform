@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { createRedisClient, getChallengeStatusFromRedis } from "../../utils";
 import bcrypt from "bcrypt";
