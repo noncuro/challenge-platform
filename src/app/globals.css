@@ -6,15 +6,18 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  --bg-grey-100: 214, 219, 220;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
+/*@media (prefers-color-scheme: dark) {*/
+/*  :root {*/
+/*    --foreground-rgb: 255, 255, 255;*/
+/*    --background-start-rgb: 0, 0, 0;*/
+/*    --background-end-rgb: 0, 0, 0;*/
+/*    --bg-grey-100: 41, 41, 41;*/
+/*  }*/
+/*}*/
 
 body {
   color: rgb(var(--foreground-rgb));
@@ -25,9 +28,22 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+.bg-black {
+  background-color: rgb(var(--foreground-rgb));
+}
+
+.bg-white {
+  background-color: rgb(var(--background-start-rgb));
 }

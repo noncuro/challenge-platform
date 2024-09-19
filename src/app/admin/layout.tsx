@@ -12,7 +12,6 @@ export default async function AdminLayout({
 }) {
 
   const adminAuthKey = cookies().get('adminAuthKey')?.value;
-  console.log(adminAuthKey);
 
   if (!adminAuthKey) {
     return <Login />;
