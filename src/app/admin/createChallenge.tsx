@@ -1,6 +1,6 @@
 'use client';
 
-import { Textarea, Button, Input, Select } from "@/components/ui";
+import { Button, Input, Select } from "@/components/ui";
 import { useState } from "react";
 import { formatDuration } from "../candidate/TimedSubmissionPlatform";
 import dynamic from 'next/dynamic';
@@ -164,6 +164,7 @@ export const CreateChallengeForm = () => {
         <Select 
           onChange={handleTemplateChange}
           value={selectedTemplate?.id || ''}
+          className="w-full p-2 border rounded"
         >
           <option value="">Select a template</option>
           {templates.map(template => (

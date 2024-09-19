@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/compo
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MarkdownViewer } from '@/components/MarkdownViewer';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -79,9 +80,38 @@ export function TemplateManager() {
         },
     });
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedTemplate) return;
-        updateTemplateMutation.mutate(selectedTemplate);
+
+        const updatedTemplate = {
+            id: selectedTemplate.id,
+            name: selectedTemplate.name,
+            content: selectedTemplate.content,
+        };
+
+        try {
+            const response = await fetch('/api/templates', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedTemplate),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update template');
+            }
+
+            const updatedData = await response.json();
+            queryClient.setQueryData(['templates'], (oldData: Template[]) =>
+                oldData.map((template) => (template.id === updatedData.id ? updatedData : template))
+            );
+
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error updating template:', error);
+            // Handle error (e.g., show an error message to the user)
+        }
     };
 
     const handleEditorChange = ({ text }: { text: string }) => {
@@ -152,7 +182,7 @@ export function TemplateManager() {
                                 <>
                                     <MdEditor
                                         style={{ height: '400px' }}
-                                        renderHTML={text => <ReactMarkdown>{text}</ReactMarkdown>}
+                                        renderHTML={text => <MarkdownViewer content={text} />}
                                         onChange={handleEditorChange}
                                         value={selectedTemplate.content}
                                     />
@@ -164,7 +194,7 @@ export function TemplateManager() {
                             ) : (
                                 <>
                                     <div className="bg-gray-100 p-6 rounded-md overflow-auto max-h-96 mb-4 text-lg">
-                                        <ReactMarkdown>{selectedTemplate.content}</ReactMarkdown>
+                                        <MarkdownViewer content={selectedTemplate.content} />
                                     </div>
                                     <div className="flex justify-end">
                                         <Button onClick={() => setIsEditing(true)}>

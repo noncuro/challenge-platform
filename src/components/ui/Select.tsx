@@ -1,16 +1,19 @@
 import React from 'react';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  className?: string;
+  label?: string;
 }
 
-export const Select: React.FC<SelectProps> = ({ className = '', children, ...props }) => {
+export const Select: React.FC<SelectProps> = ({ children, className, label, ...props }) => {
   return (
-    <select
-      className={`w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 ${className}`}
-      {...props}
-    >
-      {children}
-    </select>
+    <div className="flex flex-col">
+      {label && <label className="mb-1 text-sm font-medium text-gray-700">{label}</label>}
+      <select
+        className={`block w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 ${className || ''}`}
+        {...props}
+      >
+        {children}
+      </select>
+    </div>
   );
 };

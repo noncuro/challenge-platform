@@ -58,3 +58,43 @@ export async function POST(request: Request) {
     await redisClient.quit();
   }
 }
+
+export async function PUT(request: Request) {
+  const redis = createRedisClient();
+  try {
+    const { id, name, content } = await request.json();
+    if (!id || !name || !content) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    const templatesString = await redis.get("templates");
+    const templates: Template[] = templatesString
+      ? JSON.parse(templatesString)
+      : [];
+
+    const templateIndex = templates.findIndex((template) => template.id === id);
+    if (templateIndex === -1) {
+      return NextResponse.json(
+        { error: "Template not found" },
+        { status: 404 },
+      );
+    }
+
+    templates[templateIndex] = { id, name, content };
+
+    await redis.set("templates", JSON.stringify(templates));
+
+    return NextResponse.json(templates[templateIndex], { status: 200 });
+  } catch (error) {
+    console.error("Error updating template:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  } finally {
+    await redis.quit();
+  }
+}

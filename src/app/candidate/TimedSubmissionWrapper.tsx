@@ -1,17 +1,15 @@
 'use client';
 
-import React from 'react';
-import { CandidateResponses } from '../CandidateResponses';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TimedSubmissionPlatform } from './TimedSubmissionPlatform';
+import React from 'react';
 
 const queryClient = new QueryClient();
 
-export default function ChallengesPage() {
+export default function TimedSubmissionWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="p-4">
-        <CandidateResponses />
-      </div>
+      <TimedSubmissionPlatform />
     </QueryClientProvider>
   );
 }

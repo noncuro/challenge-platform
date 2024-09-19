@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/u
 import ReactMarkdown from 'react-markdown';
 import { formatDuration } from '../candidate/TimedSubmissionPlatform';
 import { useQuery } from '@tanstack/react-query';
+import { MarkdownViewer } from '@/components/MarkdownViewer';
 
 interface CandidateData {
     email: string;
@@ -38,9 +39,7 @@ const ChallengeModal: React.FC<ChallengeModalProps> = ({ isOpen, onClose, challe
                     </svg>
                 </button>
                 <h2 className="text-2xl font-bold mb-4">Challenge Description</h2>
-                <div className="prose max-w-none">
-                    <ReactMarkdown>{challengeDescription}</ReactMarkdown>
-                </div>
+                <MarkdownViewer content={challengeDescription} />
             </div>
         </div>
     );
