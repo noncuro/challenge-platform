@@ -70,12 +70,6 @@ export const TimedSubmissionPlatform = () => {
     const challengeStatusRef = useRef<ChallengeStatus | null>(null);
 
 
-    const clearLocalStorageDEV = () => {
-        localStorage.clear();
-        queryClient.invalidateQueries({queryKey: ['challengeStatus', ]});
-        alert('LocalStorage cleared!');
-    };
-
     useEffect(() => {
         loadSubmissionLocally()
             .then(local => {
@@ -88,7 +82,7 @@ export const TimedSubmissionPlatform = () => {
         isLoading,
         error
     } = useQuery({
-        queryKey: ['challengeStatus', ],
+        queryKey: ['challengeStatus',],
         queryFn: async () => {
             const res = await getChallengeStatus()
             challengeStatusRef.current = res;
@@ -100,9 +94,9 @@ export const TimedSubmissionPlatform = () => {
         {
             mutationFn: () => startChallenge(),
             onSuccess: (data) => {
-                queryClient.setQueryData(['challengeStatus', ], data.status);
+                queryClient.setQueryData(['challengeStatus',], data.status);
                 queryClient.invalidateQueries({
-                    queryKey: ['challengeStatus', ]
+                    queryKey: ['challengeStatus',]
                 });
             },
         }
@@ -111,8 +105,8 @@ export const TimedSubmissionPlatform = () => {
     const submitChallengeMutation = useMutation({
         mutationFn: () => submitChallenge(submission),
         onSuccess: (data) => {
-            queryClient.setQueryData(['challengeStatus', ], data);
-            queryClient.invalidateQueries({queryKey: ['challengeStatus', ]});
+            queryClient.setQueryData(['challengeStatus',], data);
+            queryClient.invalidateQueries({queryKey: ['challengeStatus',]});
             if (data.success) {
                 alert(data.isOvertime ? 'Overtime submission successful!' : 'Submission successful!');
                 if (data.isOvertime) {
@@ -145,7 +139,7 @@ export const TimedSubmissionPlatform = () => {
         if (challengeStatus?.isStarted) {
             saveSubmissionLocally(submission);
         }
-    }, [submission, challengeStatus?.isStarted, ]);
+    }, [submission, challengeStatus?.isStarted,]);
 
     useEffect(() => {
         const status = challengeStatusRef.current
@@ -175,7 +169,7 @@ export const TimedSubmissionPlatform = () => {
 
     if (isLoading) {
         return (
-            <div className="bg-black min-h-screen flex items-center justify-center p-4 font-mono">
+            <div className="bg-black min-h-full flex items-center justify-center p-4 font-mono">
                 <Card className="w-full max-w-md mx-auto bg-black border-green-500 border-2">
                     <CardContent className="flex items-center justify-center h-64">
                         <div className="text-green-400 animate-pulse">Loading simulation...</div>
@@ -187,7 +181,7 @@ export const TimedSubmissionPlatform = () => {
 
     if (error) {
         return (
-            <div className="bg-black min-h-screen flex items-center justify-center p-4 font-mono">
+            <div className="bg-black min-h-full flex items-center justify-center p-4 font-mono">
                 <Card className="w-full max-w-md mx-auto bg-black border-red-500 border-2">
                     <CardContent className="flex items-center justify-center h-64">
                         <div className="text-red-400">Error: Unable to connect to the mainframe</div>
@@ -198,7 +192,7 @@ export const TimedSubmissionPlatform = () => {
     }
 
     return (
-        <div className="bg-black min-h-screen flex items-center justify-center p-4 font-mono">
+        <div className="bg-black min-h-full flex items-center justify-center p-4 font-mono" style={{minHeight: "80vh"}}>
             <Card
                 className={`w-full max-w-md mx-auto bg-black border-green-500 border-2 ${isOvertime ? 'animate-[alert_1s_ease-in-out_infinite]' : ''}`}>
                 <CardHeader>
@@ -207,13 +201,6 @@ export const TimedSubmissionPlatform = () => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Button
-                        onClick={clearLocalStorageDEV}
-                        className="w-full mb-4 bg-red-900 hover:bg-red-700 text-red-300 border-red-500 border"
-                    >
-                        Clear LocalStorage (Dev Only)
-                    </Button>
-
                     {!challengeStatus?.isStarted ? (
                         <Button
                             onClick={() => startChallengeMutation.mutate()}
@@ -235,7 +222,7 @@ export const TimedSubmissionPlatform = () => {
                             </div>
                             <Alert className="mb-4 bg-black border-green-700 border">
                                 <AlertDescription>
-                                    <MarkdownViewer content={challengeStatus.challengeDescription || ""} />
+                                    <MarkdownViewer content={challengeStatus.challengeDescription || ""}/>
                                 </AlertDescription>
                             </Alert>
                             {challengeStatus.submission && (

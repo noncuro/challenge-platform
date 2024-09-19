@@ -9,7 +9,7 @@ export default async function CandidatePage() {
     const authKey = cookies().get('authKey')?.value;
 
     if(!email || !authKey){
-        return <div className="p-4">
+        return <div className="p-4 min-h-full">
             <h1 className="text-2xl font-bold mb-4">Timed Submission Platform</h1>
             <p>Come back when you have a token</p>
         </div>
@@ -17,13 +17,13 @@ export default async function CandidatePage() {
 
     const status = await getChallengeStatusFromRedis(email, redisClient);
     if(!status){
-        return <div className="p-4">
+        return <div className="p-4 min-h-full">
             <h1 className="text-2xl font-bold mb-4">Timed Submission Platform</h1>
             <p>Weird...</p>
         </div>
     }
 
-    return <div className="p-4">
+    return <div className="p-4 min-h-full">
         <TimedSubmissionPlatform />
     </div>
 }

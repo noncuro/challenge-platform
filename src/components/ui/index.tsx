@@ -86,7 +86,7 @@ export const Alert: React.FC<AlertProps> = ({ children, className = '', variant 
   };
 
   return (
-    <div className={`border-l-4 p-4 ${variantStyles[variant]} ${className}`} role="alert" {...props}>
+    <div className={`border-l-4 min-h-full p-4 ${variantStyles[variant]} ${className}`} role="alert" {...props}>
       {children}
     </div>
   );
