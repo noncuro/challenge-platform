@@ -1,31 +1,20 @@
 import { NextResponse } from "next/server";
-import { createRedisClient, getChallengeStatusFromRedis } from "../../utils";
-// import bcrypt from 'bcrypt';
-import { cookies } from "next/headers";
-
-export const dynamic = "force-dynamic";
+import { createRedisClient, getChallengeFromCookie } from "@/app/api/utils";
 
 export async function GET() {
   const redisClient = createRedisClient();
 
   try {
-    const email = cookies().get("email")?.value;
-    const authKey = cookies().get("authKey")?.value;
+    const challenge = await getChallengeFromCookie(redisClient);
 
-    if (!email || !authKey) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const status = await getChallengeStatusFromRedis(email, redisClient);
-
-    if (!status) {
+    if (!challenge) {
       return NextResponse.json(
         { error: "Challenge not found" },
         { status: 404 },
       );
     }
 
-    return NextResponse.json(status);
+    return NextResponse.json(challenge, { status: 200 });
   } catch (error) {
     console.error("Error fetching challenge status:", error);
     return NextResponse.json(

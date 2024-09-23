@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 export interface CreateChallengeRequest {
   email: string;
-  duration: number;
+  duration: number; // Duration in seconds
   challengeDescription: string;
 }
 
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     (await req.json()) as CreateChallengeRequest; // The user's email for the challenge
 
   const redisClient = createRedisClient();
+
   // Auth by checking the redis key 'admin' and see if the token in the cookie matches
   const admin = await redisClient.get("admin");
   const adminAuthKey = cookies().get("adminAuthKey")?.value;
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
   const newChallengeStatus: ChallengeStatus = {
     emailAddress: email,
     hashedAuthToken: hashedToken,
-    duration,
+    duration, // Duration should be in seconds
     challengeDescription,
     isStarted: false,
     startTime: null,

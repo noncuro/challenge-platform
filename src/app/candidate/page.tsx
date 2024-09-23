@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
-import TimedSubmissionPlatform from "./TimedSubmissionPlatform";
 import { createRedisClient, getChallengeStatusFromRedis } from "../api/utils";
+import React from "react";
+import TimedSubmissionWrapper from "./TimedSubmissionWrapper";
 
 export default async function CandidatePage() {
     const redisClient = createRedisClient();
@@ -8,7 +9,7 @@ export default async function CandidatePage() {
     const email = cookies().get('email')?.value;
     const authKey = cookies().get('authKey')?.value;
 
-    if(!email || !authKey){
+    if (!email || !authKey) {
         return <div className="p-4 min-h-full">
             <h1 className="text-2xl font-bold mb-4">Timed Submission Platform</h1>
             <p>Come back when you have a token</p>
@@ -16,7 +17,7 @@ export default async function CandidatePage() {
     }
 
     const status = await getChallengeStatusFromRedis(email, redisClient);
-    if(!status){
+    if (!status) {
         return <div className="p-4 min-h-full">
             <h1 className="text-2xl font-bold mb-4">Timed Submission Platform</h1>
             <p>Weird...</p>
@@ -24,6 +25,6 @@ export default async function CandidatePage() {
     }
 
     return <div className="p-4 min-h-full">
-        <TimedSubmissionPlatform />
+        <TimedSubmissionWrapper />
     </div>
 }

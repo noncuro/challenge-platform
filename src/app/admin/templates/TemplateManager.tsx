@@ -145,9 +145,6 @@ export function TemplateManager() {
                     <Button onClick={() => window.location.href = '/admin/challenges'}>
                         All Submissions
                     </Button>
-                    {/* <Button onClick={() => window.location.href = '/admin?form=createChallenge'}>
-                        Create Challenge
-                    </Button> */}
                 </div>
             </div>
             <div className="grid grid-cols-3 gap-8">
