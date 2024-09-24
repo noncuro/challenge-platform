@@ -35,7 +35,7 @@ const updateTemplate = async (template: Template): Promise<void> => {
 
 const EditTemplate: React.FC = () => {
     const searchParams = useSearchParams();
-    const id = searchParams.get('id') || '';
+    const id = searchParams?.get('id') || '';
     const queryClient = useQueryClient();
 
     const { data: template, isLoading, error } = useQuery({

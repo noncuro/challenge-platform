@@ -18,6 +18,6 @@ export const SetAuthCookieAndReload = ({email, token}: {email:string, token: str
                 setState("Badddd token!")
             }
         })
-    }, []);
+    }, [email, token]);
     return <div>{state}</div>
 }

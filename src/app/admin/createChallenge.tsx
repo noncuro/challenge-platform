@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Input, Select } from "@/components/ui";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDuration } from "../candidate/TimedSubmissionPlatform";
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
@@ -94,6 +94,9 @@ export const CreateChallengeForm = () => {
   const [token, setToken] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [durationError, setDurationError] = useState('');
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
@@ -108,13 +111,36 @@ export const CreateChallengeForm = () => {
     },
   });
 
+  const validateEmail = (email: string) => {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  useEffect(() => {
+    if (email && !validateEmail(email)) {
+      setEmailError('Please enter a valid email address');
+    } else {
+      setEmailError('');
+    }
+
+    if (duration <= 0) {
+      setDurationError('Duration must be greater than 0');
+    } else {
+      setDurationError('');
+    }
+
+    setIsFormValid(email !== '' && validateEmail(email) && duration > 0 && challengeDescription !== '');
+  }, [email, duration, challengeDescription]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    createChallengeMutation.mutate({
-      email,
-      duration,
-      challengeDescription: selectedTemplate ? selectedTemplate.content : challengeDescription,
-    });
+    if (isFormValid) {
+      createChallengeMutation.mutate({
+        email,
+        duration,
+        challengeDescription: selectedTemplate ? selectedTemplate.content : challengeDescription,
+      });
+    }
   };
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -156,10 +182,30 @@ export const CreateChallengeForm = () => {
   return (
     <div className="max-w-3xl mx-auto">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input type="text" name="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <div className="flex gap-2 items-center">
-          <Input type="number" name="duration" placeholder="Duration" value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} />
-          <span>{formatDuration(duration)}</span>
+        <div>
+          <Input 
+            type="text" 
+            name="email" 
+            placeholder="Email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            className={emailError ? 'border-red-500' : ''}
+          />
+          {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+        </div>
+        <div>
+          <div className="flex gap-2 items-center">
+            <Input 
+              type="number" 
+              name="duration" 
+              placeholder="Duration" 
+              value={duration} 
+              onChange={(e) => setDuration(parseInt(e.target.value))} 
+              className={durationError ? 'border-red-500' : ''}
+            />
+            <span>{formatDuration(duration)}</span>
+          </div>
+          {durationError && <p className="text-red-500 text-sm mt-1">{durationError}</p>}
         </div>
         <Select 
           onChange={handleTemplateChange}
@@ -180,7 +226,7 @@ export const CreateChallengeForm = () => {
             value={selectedTemplate ? selectedTemplate.content : challengeDescription}
           />
         </div>
-        <Button type="submit" disabled={createChallengeMutation.isPending}>
+        <Button type="submit" disabled={createChallengeMutation.isPending || !isFormValid}>
           {createChallengeMutation.isPending ? 'Creating...' : 'Create Challenge'}
         </Button>
       </form>

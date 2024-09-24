@@ -1,8 +1,7 @@
 import { createRedisClient, getChallengeStatusFromRedis } from './api/utils';
-import { checkAuth, setAuthCookie } from './api/utils/auth';
-import Link from 'next/link';
+import { checkAuth } from './api/utils/auth';
 import React from 'react';
-import {SetAuthCookieAndReload} from "@/app/SetAuthCookieAndReload";
+import { SetAuthCookieAndReload } from "@/app/SetAuthCookieAndReload";
 
 export const dynamic = 'force-dynamic';
 

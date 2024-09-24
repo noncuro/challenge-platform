@@ -1,8 +1,11 @@
 "use client";
-import {Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle} from '@/components/ui';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {MarkdownViewer} from '@/components/MarkdownViewer';
+import { Alert, AlertDescription, Button, Card, CardContent, CardHeader, CardTitle, Textarea } from '@/components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from "react";
+import { MarkdownViewer } from '@/components/MarkdownViewer';
+import { FiClock, FiCheckCircle, FiAlertTriangle, FiAlertCircle, FiSend } from 'react-icons/fi';
+import { ChallengeStatus } from '@/app/types';
 
 export const formatDuration = (durationInSeconds: number): string => {
     const days = Math.floor(durationInSeconds / (24 * 60 * 60));
@@ -20,7 +23,6 @@ export const formatDuration = (durationInSeconds: number): string => {
 };
 
 const startChallenge = async (): Promise<{ success: boolean; status: ChallengeStatus }> => {
-    // Check if challenge is already started
     const response = await fetch(`/api/challenge/start`, {
         method: 'POST',
         headers: {
@@ -38,169 +40,44 @@ const getChallengeStatus = async (): Promise<ChallengeStatus> => {
 const submitChallenge = async (submission: string): Promise<{
     success: boolean;
     isOvertime: boolean;
+    submissionTime: number;
 } & ChallengeStatus> => {
-    console.log(submission);
     const response = await fetch(`/api/challenge/submit`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({submission})
+        body: JSON.stringify({ submission })
     });
     return response.json();
 };
 
+const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
 
-const saveSubmissionLocally = async (submission: string) => {
-    // Simulate saving the submission to a backend
-    localStorage.setItem(`submission`, submission);
+    const pad = (num: number): string => num.toString().padStart(2, '0');
+
+    if (hours > 0) {
+        return `${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`;
+    } else {
+        return `${pad(minutes)}:${pad(remainingSeconds)}`;
+    }
 };
 
-const loadSubmissionLocally = async (): Promise<string | null> => {
-    return localStorage.getItem(`submission`);
-}
-
-const queryClient = new QueryClient()
-
-export const TimedSubmissionPlatform = () => {
-    const queryClient = useQueryClient();
-    const [submission, setSubmission] = useState(""); // Submission text
-    const [timeLeft, setTimeLeft] = useState(0);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const challengeStatusRef = useRef<ChallengeStatus | null>(null);
-
-
-    useEffect(() => {
-        loadSubmissionLocally()
-            .then(local => {
-                setSubmission(s => local || s);
-            });
-    }, []);
-
-    const {
-        data: challengeStatus,
-        isLoading,
-        error
-    } = useQuery({
-        queryKey: ['challengeStatus',],
-        queryFn: async () => {
-            const res = await getChallengeStatus()
-            challengeStatusRef.current = res;
-            return res;
-        },
-    });
-
-    const startChallengeMutation = useMutation(
-        {
-            mutationFn: () => startChallenge(),
-            onSuccess: (data) => {
-                queryClient.setQueryData(['challengeStatus',], data.status);
-                queryClient.invalidateQueries({
-                    queryKey: ['challengeStatus',]
-                });
-            },
-        }
-    );
-
-    const submitChallengeMutation = useMutation({
-        mutationFn: () => submitChallenge(submission),
-        onSuccess: (data) => {
-            queryClient.setQueryData(['challengeStatus',], data);
-            queryClient.invalidateQueries({queryKey: ['challengeStatus',]});
-            if (data.success) {
-                alert(data.isOvertime ? 'Overtime submission successful!' : 'Submission successful!');
-                if (data.isOvertime) {
-                    const timer = timerRef.current
-                    timer && clearInterval(timer);
-                }
-            } else {
-                alert('Submission failed! An overtime submission has already been made.');
-            }
-        },
-    });
-
-
-    const formatTime = (seconds: number): string => {
-        const absSeconds = Math.abs(seconds);
-        const sign = seconds < 0 ? '-' : '';
-        return `${sign}${Math.floor(absSeconds / 60)}:${(absSeconds % 60).toString().padStart(2, '0')}`;
-    };
-
-    const isOvertime = useMemo(() => challengeStatus?.isStarted && timeLeft <= 0, [challengeStatus?.isStarted, timeLeft])
-    const canSubmit = useMemo(() => !isOvertime || !challengeStatus?.submission, [isOvertime, challengeStatus?.submission]);
-
-    const getTimerColor = () => {
-        if (isOvertime) return 'text-red-500';
-        if (timeLeft <= 5) return 'text-yellow-400';
-        return 'text-green-400';
-    };
-
-    useEffect(() => {
-        if (challengeStatus?.isStarted) {
-            saveSubmissionLocally(submission);
-        }
-    }, [submission, challengeStatus?.isStarted,]);
-
-    useEffect(() => {
-        const status = challengeStatusRef.current
-        if (status?.isStarted && status?.endTime) {
-            const updateTimer = () => {
-                const now = new Date().getTime();
-                const remaining = status.endTime! - now;
-
-                // Allow negative time if in overtime and not submitted
-                if (remaining <= 0 && status.submission) {
-                    setTimeLeft(0);
-                    clearInterval(timerRef.current!);
-                } else {
-                    setTimeLeft(Math.ceil(remaining / 1000));
-                }
-            };
-
-            updateTimer(); // Initial update
-            timerRef.current = setInterval(updateTimer, 1000);
-
-            return () => {
-                const timer = timerRef.current
-                timer && clearInterval(timer);
-            };
-        }
-    }, [challengeStatus?.isStarted]);
-
-    if (isLoading) {
-        return (
-            <div className="bg-black min-h-full flex items-center justify-center p-4 font-mono">
-                <Card className="w-full max-w-md mx-auto bg-black border-green-500 border-2">
-                    <CardContent className="flex items-center justify-center h-64">
-                        <div className="text-green-400 animate-pulse">Loading simulation...</div>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="bg-black min-h-full flex items-center justify-center p-4 font-mono">
-                <Card className="w-full max-w-md mx-auto bg-black border-red-500 border-2">
-                    <CardContent className="flex items-center justify-center h-64">
-                        <div className="text-red-400">Error: Unable to connect to the mainframe</div>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
+const StickyHeader: React.FC<{
+    timeLeft: number;
+    isOvertime: boolean;
+    clearLocalStorageDEV: () => void;
+    challengeStatus: ChallengeStatus | undefined;
+    startChallengeMutation: any;
+}> = ({ timeLeft, isOvertime, clearLocalStorageDEV, challengeStatus, startChallengeMutation }) => {
     return (
-        <div className="bg-black min-h-full flex items-center justify-center p-4 font-mono" style={{minHeight: "80vh"}}>
-            <Card
-                className={`w-full max-w-md mx-auto bg-black border-green-500 border-2 ${isOvertime ? 'animate-[alert_1s_ease-in-out_infinite]' : ''}`}>
-                <CardHeader>
-                    <CardTitle className="text-2xl text-green-400 animate-[glow_1.5s_ease-in-out_infinite]">
-                        Slingshot Challenge Interface
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
+        <div className="sticky top-0 z-10 bg-gray-900 shadow-lg">
+            <div className="container mx-auto px-6 py-4">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-white">Coding Challenge</h1>
                     {!challengeStatus?.isStarted ? (
                         <Button
                             onClick={() => startChallengeMutation.mutate()}
@@ -210,55 +87,306 @@ export const TimedSubmissionPlatform = () => {
                             {startChallengeMutation.isPending ? 'Initializing...' : 'Initialize Simulation'}
                         </Button>
                     ) : (
-                        <>
-                            <div className="text-center mb-4">
-                                <div
-                                    className={`text-4xl font-bold ${getTimerColor()} animate-[glow_1.5s_ease-in-out_infinite]`}>
-                                    {formatTime(timeLeft)}
-                                </div>
-                                <div className={`text-sm ${timeLeft <= 0 ? 'text-red-500' : 'text-green-600'}`}>
-                                    {timeLeft <= 0 ? 'OVERTIME' : 'Time Remaining'}
-                                </div>
+                        <div className="flex items-center space-x-6">
+                            <div className="flex items-center space-x-2">
+                                <FiClock className="text-2xl text-blue-400" />
+                                <span className="text-lg font-medium text-gray-300">
+                                    Time Remaining:
+                                </span>
+                                <span className={`text-2xl font-bold ${isOvertime ? 'text-red-400' : 'text-green-400'}`}>
+                                    {formatTime(Math.abs(timeLeft))}
+                                </span>
                             </div>
-                            <Alert className="mb-4 bg-black border-green-700 border">
-                                <AlertDescription>
-                                    <MarkdownViewer content={challengeStatus.challengeDescription || ""}/>
-                                </AlertDescription>
-                            </Alert>
-                            {challengeStatus.submission && (
-                                <Alert
-                                    className={`mb-4 ${challengeStatus.submissionTime! > challengeStatus.endTime! ? 'bg-red-900 border-red-500' : 'bg-green-900 border-green-500'} border`}>
-                                    <AlertDescription className="text-green-300">
-                                        {challengeStatus.submissionTime! > challengeStatus.endTime! ? 'Overtime submission' : 'Last submission'}: {new Date(challengeStatus.submissionTime!).toLocaleTimeString()} ({formatDuration((challengeStatus.submissionTime! - challengeStatus.startTime!) / 1000)})
-                                    </AlertDescription>
-                                </Alert>
+                            {process.env.NODE_ENV === 'development' && (
+                                <Button
+                                    onClick={clearLocalStorageDEV}
+                                    className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition duration-300 ease-in-out"
+                                >
+                                    Clear Storage (Dev)
+                                </Button>
                             )}
-                            <textarea
-                                placeholder="Enter your submission here..."
-                                value={submission}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => !isOvertime || !challengeStatus.submission ? setSubmission(e.target.value) : null}
-                                className={`w-full h-40 mb-4 bg-black text-green-400 border-green-700 focus:border-green-500 placeholder-green-700 ${isOvertime && challengeStatus.submission ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                disabled={isOvertime && challengeStatus.submission ? true : false}
-                            />
-                            <Button
-                                onClick={() => submitChallengeMutation.mutate()}
-                                className={`w-full ${isOvertime ? 'bg-red-900 hover:bg-red-700 text-red-300 border-red-500' : 'bg-green-900 hover:bg-green-700 text-green-300 border-green-500'} border`}
-                                disabled={submitChallengeMutation.isPending || !canSubmit}
-                            >
-                                {submitChallengeMutation.isPending
-                                    ? 'Uploading...'
-                                    : !canSubmit
-                                        ? 'Submission Closed'
-                                        : isOvertime
-                                            ? 'Submit Overtime Entry'
-                                            : challengeStatus.submission
-                                                ? 'Update Submission'
-                                                : 'Submit Challenge'}
-                            </Button>
-                        </>
+                        </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SubmissionArea: React.FC<{
+    submission: string;
+    setSubmission: (value: string) => void;
+    onSubmit: () => void;
+    isSubmitting: boolean;
+    timeLeft: number;
+    canSubmit: boolean;
+    submissionStatus: 'idle' | 'success' | 'error';
+    isFirstSubmission: boolean;
+    canSubmitOvertime: boolean;
+    challengeStatus: ChallengeStatus | null;
+}> = ({
+    submission,
+    setSubmission,
+    onSubmit,
+    isSubmitting,
+    timeLeft,
+    canSubmit,
+    submissionStatus,
+    isFirstSubmission,
+    canSubmitOvertime,
+    challengeStatus
+}) => {
+        const [showWarning, setShowWarning] = useState(false);
+
+        const handleSubmit = () => {
+            if (submission.trim().length < 10) {
+                setShowWarning(true);
+                return;
+            }
+            onSubmit();
+        };
+
+        const lastSubmissionTime = challengeStatus?.latestSubmission?.timestamp;
+        const isOvertime = lastSubmissionTime ? lastSubmissionTime > challengeStatus.endTime! : false;
+
+        const formatDateTime = (timestamp: number) => {
+            return new Date(timestamp).toLocaleString();
+        };
+
+        return (
+            <div className="mt-8 bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+                <h2 className="text-2xl font-bold text-white mb-4">Your Solution</h2>
+                <Textarea
+                    value={submission}
+                    onChange={(e) => setSubmission(e.target.value)}
+                    placeholder="Enter your solution here..."
+                    className={`w-full h-64 mb-4 bg-gray-700 text-white border-gray-600 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 rounded-md resize-vertical ${submissionStatus === 'success' ? 'border-green-500' : ''
+                        }`}
+                />
+                {submissionStatus === 'success' && (
+                    <div className="text-green-400 mb-4">Submission successful!</div>
+                )}
+                <div className="mt-4 flex flex-col md:flex-row justify-between items-stretch gap-4">
+
+
+                    <Alert
+                        className={`flex items-center md:flex-1 ${lastSubmissionTime
+                                ? isOvertime
+                                    ? 'bg-red-900 border-red-700'
+                                    : 'bg-green-900 border-green-700'
+                                : 'bg-gray-700 border-gray-600'
+                            } border rounded-lg p-4`}
+                    >
+                        <FiClock className="text-2xl mr-3 text-blue-400 flex-shrink-0" />
+                        <AlertDescription className="text-white">
+                            Last submission: {' '}
+                            {lastSubmissionTime
+                                ? `${formatDateTime(lastSubmissionTime)} ${isOvertime ? '(Overtime)' : ''}`
+                                : 'N/A'}
+                        </AlertDescription>
+                    </Alert>
+
+                    <Button
+                        onClick={onSubmit}
+                        disabled={isSubmitting || !canSubmit}
+                        className={`px-6 py-3 flex items-center justify-center md:w-1/4 ${isSubmitting || !canSubmit
+                                ? 'bg-gray-600 cursor-not-allowed'
+                                : canSubmitOvertime
+                                    ? 'bg-yellow-600 hover:bg-yellow-700'
+                                    : 'bg-green-600 hover:bg-green-700'
+                            } text-white rounded-md transition duration-300 ease-in-out`}
+                    >
+                        <FiSend className="mr-2" />
+                        {isSubmitting ? 'Submitting...' : canSubmitOvertime ? 'Submit Late' : 'Submit Challenge'}
+                    </Button>
+                </div>
+                {canSubmitOvertime && (
+                    <Alert variant="warning" className="mt-4">
+                        <FiAlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                            Your submission will be marked as late.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {isOvertime && !canSubmitOvertime && !isFirstSubmission && (
+                    <Alert variant="error" className="mt-4">
+                        <FiAlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            Time&apos;s up. You can still submit, but it will be marked as overtime.
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </div>
+        );
+    };
+
+const queryClient = new QueryClient();
+
+export const TimedSubmissionPlatform: React.FC = () => {
+    const [submission, setSubmission] = useState(() => {
+        // Initialize submission from localStorage if available
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('submission') || "";
+        }
+        return "";
+    });
+    const [timeLeft, setTimeLeft] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+    const clearLocalStorageDEV = () => {
+        if (typeof window !== 'undefined') {
+            const currentSubmission = localStorage.getItem('submission');
+            localStorage.clear();
+            if (currentSubmission) {
+                localStorage.setItem('submission', currentSubmission);
+            }
+        }
+        queryClient.invalidateQueries({ queryKey: ['challengeStatus'] });
+        alert('LocalStorage cleared (except submission)!');
+    };
+
+    useEffect(() => {
+        // Save submission to localStorage whenever it changes
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('submission', submission);
+        }
+    }, [submission]);
+
+    const { data: challengeStatus, refetch } = useQuery({
+        queryKey: ['challengeStatus'],
+        queryFn: getChallengeStatus,
+        refetchInterval: 1000,
+    });
+
+    const startChallengeMutation = useMutation({
+        mutationFn: startChallenge,
+        onSuccess: (data) => {
+            if (data.success) {
+                queryClient.setQueryData(['challengeStatus'], data.status);
+                queryClient.invalidateQueries({ queryKey: ['challengeStatus'] });
+            } else {
+                alert('Failed to start challenge');
+            }
+        },
+        onError: () => {
+            alert('Failed to start challenge');
+        }
+    });
+
+    const submitChallengeMutation = useMutation({
+        mutationFn: submitChallenge,
+        onSuccess: (data) => {
+            if (data.success) {
+                queryClient.setQueryData(['challengeStatus'], data);
+                queryClient.invalidateQueries({ queryKey: ['challengeStatus'] });
+                setSubmissionStatus('success');
+                setTimeout(() => setSubmissionStatus('idle'), 3000); // Reset after 3 seconds
+            } else {
+                setSubmissionStatus('error');
+                alert('Submission failed! An overtime submission has already been made.');
+            }
+        },
+        onError: () => {
+            setSubmissionStatus('error');
+            alert('Failed to submit challenge');
+        }
+    });
+
+    useEffect(() => {
+        if (challengeStatus?.isStarted) {
+            if (challengeStatus.endTime === null) {
+                console.error('Challenge end time is null for a started challenge');
+                // You might want to handle this case, e.g., by setting a default duration
+                return;
+            }
+
+            const updateTimer = () => {
+                const now = Date.now();
+                const endTime = challengeStatus.endTime ?? now; // Use nullish coalescing
+                const remaining = endTime - now;
+
+                if (remaining <= 0) {
+                    setTimeLeft(0);
+                    if (timerRef.current) {
+                        clearInterval(timerRef.current);
+                    }
+                } else {
+                    setTimeLeft(Math.ceil(remaining / 1000));
+                }
+            };
+
+            updateTimer();
+            timerRef.current = setInterval(updateTimer, 1000);
+
+            return () => {
+                if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                }
+            };
+        }
+    }, [challengeStatus]);
+
+    const isOvertime = timeLeft <= 0;
+    const isFirstSubmission = !challengeStatus?.latestSubmission;
+    const canSubmitOvertime = isOvertime && isFirstSubmission;
+
+    const handleSubmit = () => {
+        if (submission.trim() === "") {
+            alert('Submission cannot be empty');
+            return;
+        }
+        submitChallengeMutation.mutate(submission);
+    };
+
+    if (!challengeStatus?.isStarted) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-4xl font-bold text-white mb-8">Coding Challenge</h1>
+                    <Button
+                        onClick={() => startChallengeMutation.mutate()}
+                        className="px-8 py-4 bg-green-600 hover:bg-green-700 text-white text-xl font-bold rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        disabled={startChallengeMutation.isPending}
+                    >
+                        {startChallengeMutation.isPending ? 'Initializing...' : 'Initialize Simulation'}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-900">
+            <StickyHeader
+                timeLeft={timeLeft}
+                isOvertime={isOvertime}
+                clearLocalStorageDEV={clearLocalStorageDEV}
+                challengeStatus={challengeStatus}
+                startChallengeMutation={startChallengeMutation}
+            />
+            <div className="container mx-auto px-6 py-8">
+                <Card className="w-full max-w-4xl mx-auto bg-gray-800 text-white shadow-xl border border-gray-700 rounded-lg overflow-hidden">
+                    <CardHeader className="bg-gray-700 border-b border-gray-600 p-6">
+                        <CardTitle className="text-2xl font-bold text-blue-300">Challenge Description</CardTitle>
+                    </CardHeader>
+                    <CardContent className="prose prose-invert max-w-none bg-gray-800 text-gray-200 p-6">
+                        <MarkdownViewer content={challengeStatus?.challengeDescription || ''} />
+                    </CardContent>
+                </Card>
+                <SubmissionArea
+                    submission={submission}
+                    setSubmission={setSubmission}
+                    onSubmit={handleSubmit}
+                    isSubmitting={submitChallengeMutation.isPending}
+                    timeLeft={timeLeft}
+                    canSubmit={!isOvertime || canSubmitOvertime}
+                    submissionStatus={submissionStatus}
+                    isFirstSubmission={isFirstSubmission}
+                    canSubmitOvertime={canSubmitOvertime}
+                    challengeStatus={challengeStatus}
+                />
+            </div>
         </div>
     );
 };
@@ -266,7 +394,7 @@ export const TimedSubmissionPlatform = () => {
 const Wrapper = () => {
     return (
         <QueryClientProvider client={queryClient}>
-            <TimedSubmissionPlatform/>
+            <TimedSubmissionPlatform />
         </QueryClientProvider>
     );
 }

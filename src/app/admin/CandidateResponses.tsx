@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui';
 import ReactMarkdown from 'react-markdown';
 import { formatDuration } from '../candidate/TimedSubmissionPlatform';
 import { useQuery } from '@tanstack/react-query';
 import { MarkdownViewer } from '@/components/MarkdownViewer';
+import { Input } from '@/components/ui';
 
 interface CandidateData {
     email: string;
@@ -56,6 +57,7 @@ const fetchCandidates = async (): Promise<CandidateData[]> => {
 export const CandidateResponses = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { data: candidates, error, isLoading, refetch, isFetching } = useQuery<CandidateData[], Error>({
         queryKey: ['candidates'],
@@ -66,6 +68,17 @@ export const CandidateResponses = () => {
         setSelectedChallenge(description);
         setModalOpen(true);
     };
+
+    const filteredAndSortedCandidates = candidates
+        ?.filter(candidate => 
+            candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            candidate.submission?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+            const aTime = a.submissionTime || a.startTime || 0;
+            const bTime = b.submissionTime || b.startTime || 0;
+            return bTime - aTime;
+        });
 
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error: {error.message}</div>;
@@ -78,7 +91,14 @@ export const CandidateResponses = () => {
                     {isFetching ? 'Refreshing...' : 'Refresh'}
                 </Button>
             </div>
-            {candidates?.map((candidate) => (
+            <Input
+                type="text"
+                placeholder="Search by email or submission content"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mb-4"
+            />
+            {filteredAndSortedCandidates?.map((candidate) => (
                 <Card key={candidate.email} className="overflow-hidden">
                     <CardHeader className="bg-gray-100">
                         <CardTitle className="flex justify-between items-center">
@@ -105,7 +125,6 @@ export const CandidateResponses = () => {
                             )}
                         </div>
                         <div className="bg-gray-100 p-4 rounded overflow-auto max-h-96">
-                            <h3 className="text-lg font-semibold mb-2">Submission</h3>
                             {candidate.submission ? (
                                 <ReactMarkdown>{candidate.submission}</ReactMarkdown>
                             ) : (
