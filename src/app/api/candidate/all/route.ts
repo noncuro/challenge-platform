@@ -28,8 +28,8 @@ export async function GET() {
 
         return {
           email,
-          submission: status?.submission || null,
-          submissionTime: status?.submissionTime || null,
+          submission: status?.latestSubmission?.content || null,
+          submissionTime: status?.latestSubmission?.timestamp || null,
           isStarted: status?.isStarted || false,
           startTime: status?.startTime || null,
           endTime: status?.endTime || null,

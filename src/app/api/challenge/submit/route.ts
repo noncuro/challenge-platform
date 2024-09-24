@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRedisClient, getChallengeFromCookie } from "@/app/api/utils";
+import { Submission } from "@/app/types"; // Make sure to update your types file
 
 export async function POST(request: Request) {
   const redis = createRedisClient();
@@ -33,7 +34,11 @@ export async function POST(request: Request) {
     const currentTime = new Date().getTime();
     const isOvertime = currentTime > challengeStatus.endTime!;
 
-    if (isOvertime && challengeStatus.submission) {
+    if (
+      isOvertime &&
+      challengeStatus.submissions &&
+      challengeStatus.submissions.length > 0
+    ) {
       return NextResponse.json(
         { success: false, message: "Overtime submission not allowed" },
         { status: 400 },
@@ -41,8 +46,17 @@ export async function POST(request: Request) {
     }
 
     // Update challenge status
-    challengeStatus.submission = submission;
-    challengeStatus.submissionTime = currentTime;
+    if (!challengeStatus.submissions) {
+      challengeStatus.submissions = [];
+    }
+
+    const newSubmission: Submission = {
+      content: submission,
+      timestamp: currentTime,
+    };
+
+    challengeStatus.submissions.push(newSubmission);
+    challengeStatus.latestSubmission = newSubmission;
 
     // Save updated challenge status
     await redis.set(
@@ -54,11 +68,11 @@ export async function POST(request: Request) {
       {
         success: true,
         message: isOvertime
-          ? "Overtime submission accepted"
+          ? "Late submission accepted"
           : "Challenge submitted successfully",
         submissionTime: currentTime,
         isOvertime,
-        submission,
+        submission: newSubmission,
       },
       { status: 200 },
     );

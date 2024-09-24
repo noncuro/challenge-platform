@@ -48,8 +48,8 @@ export async function POST(req: Request) {
     isStarted: false,
     startTime: null,
     endTime: null,
-    submission: null,
-    submissionTime: null,
+    submissions: [],
+    latestSubmission: null,
   };
 
   // Set the challenge status in Redis

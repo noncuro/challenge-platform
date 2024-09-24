@@ -21,6 +21,14 @@ export async function POST() {
       );
     }
 
+    // Add this check
+    if (challengeStatus.isStarted) {
+      return NextResponse.json(
+        { success: false, message: "Challenge has already started" },
+        { status: 400 },
+      );
+    }
+
     // Start the challenge
     const startTime = Date.now(); // Current timestamp in milliseconds
     const endTime = startTime + challengeStatus.duration * 1000; // duration is in seconds

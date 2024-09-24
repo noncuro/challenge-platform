@@ -58,20 +58,11 @@ export const CandidateResponses = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedChallenge, setSelectedChallenge] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const { data: candidates, error, isLoading, refetch, isFetching } = useQuery<CandidateData[], Error>({
         queryKey: ['candidates'],
         queryFn: fetchCandidates,
     });
-
-    useEffect(() => {
-        if (error) {
-            setErrorMessage(`Failed to fetch candidates: ${error.message}`);
-        } else {
-            setErrorMessage(null);
-        }
-    }, [error]);
 
     const openChallengeModal = (description: string) => {
         setSelectedChallenge(description);
@@ -90,7 +81,7 @@ export const CandidateResponses = () => {
         });
 
     if (isLoading) return <div>Loading...</div>;
-    if (errorMessage) return <div>Error: {errorMessage}</div>;
+    if (error) return <div>Error: {error.message}</div>;
 
     return (
         <div className="space-y-6">
