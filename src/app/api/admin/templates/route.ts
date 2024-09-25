@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createRedisClient } from "../../utils";
+import { createRedisClient } from "@/app/api/utils";
 import { checkAdminAuth } from "@/app/api/utils/auth";
 import { cookies } from "next/headers";
 

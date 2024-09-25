@@ -13,3 +13,7 @@ pnpm dev
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 For local development, set up Upstash and set your credentials in a `.env.local` file, copied from `.env.sample`.
+
+## Work to do
+
+- Note that users can't do two challenges - we require unique email address, and we use localStorage to cache the submission globally

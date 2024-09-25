@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createRedisClient } from "../../utils";
+import { createRedisClient } from "@/app/api/utils";
 import { setAuthCookie, checkAuth } from "../../utils/auth";
 
 export async function POST(request: Request) {

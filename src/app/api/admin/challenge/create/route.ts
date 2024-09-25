@@ -1,4 +1,4 @@
-import { createRedisClient } from "../../utils";
+import { createRedisClient } from "@/app/api/utils";
 import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import crypto from "crypto";

@@ -49,7 +49,7 @@ export const CreateChallengeForm = () => {
         body: JSON.stringify(challengeData),
       });
       if (!response.ok) {
-        throw new Error('Failed to create challenge');
+        throw new Error('Failed to create challenge' + await response.text());
       }
       return await response.json() as { token: string }; // TODO
     },
@@ -57,6 +57,9 @@ export const CreateChallengeForm = () => {
       setToken(data.token);
       setIsSuccessModalOpen(true);
     },
+    onError: (error) => {
+        alert('Failed to create challenge: ' + error.message);
+    }
   });
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
