@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui';
 import ReactMarkdown from 'react-markdown';
-import { formatDuration } from '../candidate/TimedSubmissionPlatform';
 import { useQuery } from '@tanstack/react-query';
 import { MarkdownViewer } from '@/components/MarkdownViewer';
 import { Input } from '@/components/ui';
+
+import {formatDuration} from "@/utils";
 
 interface CandidateData {
     email: string;
@@ -46,12 +47,12 @@ const ChallengeModal: React.FC<ChallengeModalProps> = ({ isOpen, onClose, challe
     );
 };
 
-const fetchCandidates = async (): Promise<CandidateData[]> => {
-    const response = await fetch('/api/candidate/all');
+const fetchCandidates = async () => {
+    const response = await fetch('/api/admin/candidate/all');
     if (!response.ok) {
         throw new Error('Failed to fetch candidates');
     }
-    return response.json();
+    return await response.json() as CandidateData[];
 };
 
 export const CandidateResponses = () => {
@@ -59,7 +60,7 @@ export const CandidateResponses = () => {
     const [selectedChallenge, setSelectedChallenge] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const { data: candidates, error, isLoading, refetch, isFetching } = useQuery<CandidateData[], Error>({
+    const { data: candidates, error, isLoading, refetch, isFetching } = useQuery({
         queryKey: ['candidates'],
         queryFn: fetchCandidates,
     });

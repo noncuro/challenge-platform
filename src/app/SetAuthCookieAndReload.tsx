@@ -1,10 +1,12 @@
 "use client";
 import {useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
 
 export const SetAuthCookieAndReload = ({email, token}: {email:string, token: string}) =>{
     const [state, setState] = useState("Loading...");
+    const router = useRouter()
     useEffect(() => {
-        fetch("/api/auth", {
+        fetch("/api/challenge/auth", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json'
@@ -13,7 +15,7 @@ export const SetAuthCookieAndReload = ({email, token}: {email:string, token: str
         }).then((response) => {
             if(response.ok){
                 setState("Success! Redirecting...")
-                window.location.replace("/candidate")
+                router.push("/candidate")
             }else{
                 setState("Badddd token!")
             }

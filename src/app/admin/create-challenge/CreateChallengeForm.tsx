@@ -1,16 +1,16 @@
 'use client';
 
-import { Button, Input, Select } from "@/components/ui";
-import {useState, useEffect, useMemo} from "react";
-import { formatDuration } from "../candidate/TimedSubmissionPlatform";
+import {Button, Input, Select} from "@/components/ui";
+import React, {useMemo, useState} from "react";
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
-import React from 'react';
 import 'react-markdown-editor-lite/lib/index.css';
-import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {useRouter} from 'next/navigation';
+import {useMutation} from '@tanstack/react-query';
 import {CreateChallengeRequest} from "@/app/api/challenge/create/route";
-import { useTemplates } from "@/state";
+import {useTemplates} from "@/state";
+import {formatDuration} from "@/utils";
+import {SuccessModal} from "@/app/admin/create-challenge/ChallengeCreatedModal";
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -22,63 +22,6 @@ interface Template {
   content: string;
 }
 
-interface SuccessModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  challengeUrl: string;
-}
-
-const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, challengeUrl }) => {
-  const [copied, setCopied] = useState(false);
-
-  if (!isOpen) return null;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(challengeUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-4">Challenge Created Successfully!</h2>
-        <p className="mb-4">Your challenge URL:</p>
-        <div className="flex items-center mb-4">
-          <input
-            type="text"
-            value={challengeUrl}
-            readOnly
-            className="flex-grow border rounded-l px-2 py-1"
-          />
-          <button
-            onClick={copyToClipboard}
-            className="bg-blue-500 text-white px-4 py-1 rounded-r hover:bg-blue-600"
-          >
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-        </div>
-        <Button onClick={onClose}>Close</Button>
-      </div>
-    </div>
-  );
-};
-
-
-const createChallenge = async (challengeData: CreateChallengeRequest) => {
-  const response = await fetch('/api/challenge/create', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(challengeData),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create challenge');
-  }
-  return await response.json() as { token: string }; // TODO
-};
 
 const validateEmail = (email: string) => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -97,7 +40,19 @@ export const CreateChallengeForm = () => {
   const { data: templates = [] } = useTemplates();
 
   const createChallengeMutation = useMutation({
-    mutationFn: createChallenge,
+    mutationFn: async (challengeData: CreateChallengeRequest) => {
+      const response = await fetch('/api/admin/challenge/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(challengeData),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create challenge');
+      }
+      return await response.json() as { token: string }; // TODO
+    },
     onSuccess: (data) => {
       setToken(data.token);
       setIsSuccessModalOpen(true);

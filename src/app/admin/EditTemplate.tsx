@@ -19,11 +19,6 @@ interface Template {
     content: string;
 }
 
-const fetchTemplate = async (id: string): Promise<Template> => {
-    const response = await fetch(`/api/admin/templates/${id}`);
-    if (!response.ok) throw new Error('Failed to fetch template');
-    return response.json();
-};
 
 const updateTemplate = async (template: Template): Promise<void> => {
     const response = await fetch(`/api/admin/templates`, {
@@ -34,10 +29,11 @@ const updateTemplate = async (template: Template): Promise<void> => {
     if (!response.ok) throw new Error('Failed to update template');
 };
 
-const EditTemplate: React.FC = () => {
+const EditTemplate = () => {
     const searchParams = useSearchParams();
     const id = searchParams?.get('id') || '';
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     const { data: template, isLoading, error } = useTemplate({templateId: id})
 
@@ -45,7 +41,7 @@ const EditTemplate: React.FC = () => {
         mutationFn: updateTemplate,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['template', id] });
-            window.location.href = '/admin'; // TODO: useRouter
+            router.push('/admin');
         },
     });
 

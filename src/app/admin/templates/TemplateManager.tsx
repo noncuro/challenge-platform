@@ -1,112 +1,83 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/components/ui';
+import React, {useState} from 'react';
+import {Card, CardContent, CardHeader, CardTitle, Button, Input} from '@/components/ui';
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MarkdownViewer } from '@/components/MarkdownViewer';
-import { useTemplates } from '@/state';
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {MarkdownViewer} from '@/components/MarkdownViewer';
+import {useTemplates} from '@/state';
+import {useRouter} from "next/navigation";
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
-  ssr: false
+    ssr: false
 });
 
 interface Template {
-  id: string;
-  name: string;
-  content: string;
+    id: string;
+    name: string;
+    content: string;
 }
 
-const updateTemplate = async (template: Template): Promise<Template> => {
-    const response = await fetch('/api/admin/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(template),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to update template');
-    }
-    return response.json();
-};
 
-const createTemplate = async (newTemplate: Template): Promise<Template> => {
-    const response = await fetch('/api/admin/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTemplate),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to create template');
-    }
-    return response.json();
-};
 
 export function TemplateManager() {
     const queryClient = useQueryClient();
+    const router = useRouter();
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState('');
     const [newTemplateContent, setNewTemplateContent] = useState('');
 
-    const { data: templates = [], isLoading, error } = useTemplates()
-
-    const updateTemplateMutation = useMutation({
-        mutationFn: updateTemplate,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['templates'] });
-            setIsEditing(false);
-        },
-    });
+    const {data: templates = [], isLoading, error} = useTemplates()
 
     const createTemplateMutation = useMutation({
-        mutationFn: createTemplate,
+        mutationFn: async (newTemplate: Template): Promise<Template> => {
+            const response = await fetch('/api/admin/templates', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(newTemplate),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create template');
+            }
+            return response.json();
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['templates'] });
+            queryClient.invalidateQueries({queryKey: ['templates']});
             setIsAddModalOpen(false);
             setNewTemplateName('');
             setNewTemplateContent('');
         },
     });
 
-    const handleSave = async () => {
-        if (!selectedTemplate) return;
-
-        const updatedTemplate = {
-            id: selectedTemplate.id,
-            name: selectedTemplate.name,
-            content: selectedTemplate.content,
-        };
-
-        try {
+    const updateTemplateMutation = useMutation({
+        mutationFn: async (updatedTemplate: Template): Promise<Template> => {
             const response = await fetch('/api/admin/templates', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(updatedTemplate),
             });
-
             if (!response.ok) {
                 throw new Error('Failed to update template');
             }
-
-            const updatedData = await response.json();
-            queryClient.setQueryData(['templates'], (oldData: Template[]) =>
-                oldData.map((template) => (template.id === updatedData.id ? updatedData : template))
-            );
-
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ['templates']});
             setIsEditing(false);
-        } catch (error) {
-            console.error('Error updating template:', error);
-            // Handle error (e.g., show an error message to the user)
-        }
+        },
+    });
+
+    const handleSave = async () => {
+        if (!selectedTemplate) return;
+        updateTemplateMutation.mutate(selectedTemplate);
     };
 
-    const handleEditorChange = ({ text }: { text: string }) => {
+    const handleEditorChange = ({text}: { text: string }) => {
         if (selectedTemplate) {
-            setSelectedTemplate({ ...selectedTemplate, content: text });
+            setSelectedTemplate({...selectedTemplate, content: text});
         }
     };
 
@@ -132,7 +103,9 @@ export function TemplateManager() {
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold">Manage Templates</h1>
                 <div className="space-x-4">
-                    <Button onClick={() => window.location.href = '/admin/challenges'}>
+                    <Button onClick={() => {
+                        router.push('/admin/challenges');
+                    }}>
                         All Submissions
                     </Button>
                 </div>
@@ -168,8 +141,8 @@ export function TemplateManager() {
                             isEditing ? (
                                 <>
                                     <MdEditor
-                                        style={{ height: '400px' }}
-                                        renderHTML={text => <MarkdownViewer content={text} />}
+                                        style={{height: '400px'}}
+                                        renderHTML={text => <MarkdownViewer content={text}/>}
                                         onChange={handleEditorChange}
                                         value={selectedTemplate.content}
                                     />
@@ -181,7 +154,7 @@ export function TemplateManager() {
                             ) : (
                                 <>
                                     <div className="bg-gray-100 p-6 rounded-md overflow-auto max-h-96 mb-4 text-lg">
-                                        <MarkdownViewer content={selectedTemplate.content} />
+                                        <MarkdownViewer content={selectedTemplate.content}/>
                                     </div>
                                     <div className="flex justify-end">
                                         <Button onClick={() => setIsEditing(true)}>
@@ -210,9 +183,9 @@ export function TemplateManager() {
                                 className="mb-4"
                             />
                             <MdEditor
-                                style={{ height: '300px' }}
+                                style={{height: '300px'}}
                                 renderHTML={text => <ReactMarkdown>{text}</ReactMarkdown>}
-                                onChange={({ text }) => setNewTemplateContent(text)}
+                                onChange={({text}) => setNewTemplateContent(text)}
                                 value={newTemplateContent}
                             />
                             <div className="mt-4">

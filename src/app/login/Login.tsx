@@ -8,7 +8,7 @@ export const Login = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('/api/auth/admin', {
+      const response = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

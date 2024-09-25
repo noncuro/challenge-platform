@@ -1,7 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { createRedisClient, getChallengeStatusFromRedis } from "../../utils";
+import {
+  createRedisClient,
+  getChallengeStatusFromRedis,
+} from "@/app/api/utils";
 import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 

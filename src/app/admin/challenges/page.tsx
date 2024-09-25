@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { CandidateResponses } from '../CandidateResponses';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ErrorProvider } from '@/contexts/ErrorContext';
+import {CandidateResponses} from './CandidateResponses';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ErrorProvider} from '@/contexts/ErrorContext';
 
 const queryClient = new QueryClient();
 
