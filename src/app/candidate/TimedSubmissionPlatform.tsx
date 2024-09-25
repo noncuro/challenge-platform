@@ -7,7 +7,8 @@ import { MarkdownViewer } from '@/components/MarkdownViewer';
 import { FiClock, FiCheckCircle, FiAlertTriangle, FiAlertCircle, FiSend } from 'react-icons/fi';
 import { ChallengeStatus } from '@/app/types';
 
-export const formatDuration = (durationInSeconds: number): string => {
+export const formatDuration = (durationInSeconds: number | null): string => {
+    if(durationInSeconds === null) return "NaN"
     const days = Math.floor(durationInSeconds / (24 * 60 * 60));
     const hours = Math.floor((durationInSeconds % (24 * 60 * 60)) / (60 * 60));
     const minutes = Math.floor((durationInSeconds % (60 * 60)) / 60);

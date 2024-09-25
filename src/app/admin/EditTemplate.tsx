@@ -19,13 +19,13 @@ interface Template {
 }
 
 const fetchTemplate = async (id: string): Promise<Template> => {
-    const response = await fetch(`/api/templates/${id}`);
+    const response = await fetch(`/api/admin/templates/${id}`);
     if (!response.ok) throw new Error('Failed to fetch template');
     return response.json();
 };
 
 const updateTemplate = async (template: Template): Promise<void> => {
-    const response = await fetch(`/api/templates`, {
+    const response = await fetch(`/api/admin/templates`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(template),

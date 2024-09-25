@@ -32,7 +32,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose })
 
     const fetchTemplates = async () => {
         try {
-            const response = await fetch('/api/templates');
+            const response = await fetch('/api/admin/templates');
             if (response.ok) {
                 const data = await response.json();
                 setTemplates(data);
@@ -48,7 +48,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose })
         if (!selectedTemplate) return;
 
         try {
-            const response = await fetch('/api/templates', {
+            const response = await fetch('/api/admin/templates', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose })
         };
 
         try {
-            const response = await fetch('/api/templates', {
+            const response = await fetch('/api/admin/templates', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

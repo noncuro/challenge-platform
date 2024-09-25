@@ -15,15 +15,15 @@ interface Template {
 }
 
 const fetchTemplates = async (): Promise<Template[]> => {
-  const response = await fetch('/api/templates');
+  const response = await fetch('/api/admin/templates');
   if (!response.ok) {
     throw new Error('Failed to fetch templates');
   }
-  return response.json();
+  return await response.json();
 };
 
 const updateTemplate = async (template: Template): Promise<Template> => {
-  const response = await fetch('/api/templates', {
+  const response = await fetch('/api/admin/templates', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(template),
@@ -35,7 +35,7 @@ const updateTemplate = async (template: Template): Promise<Template> => {
 };
 
 const createTemplate = async (newTemplate: Template): Promise<Template> => {
-  const response = await fetch('/api/templates', {
+  const response = await fetch('/api/admin/templates', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newTemplate),
@@ -54,11 +54,8 @@ export function TemplateManager() {
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateContent, setNewTemplateContent] = useState('');
 
-  const { data: templates = [], isLoading, error } = useQuery({
-    queryKey: ['templates'],
-    queryFn: fetchTemplates,
-  });
-
+  const { data: templates = [], isLoading, error } = useTemplates()
+  
   const updateTemplateMutation = useMutation({
     mutationFn: updateTemplate,
     onSuccess: () => {

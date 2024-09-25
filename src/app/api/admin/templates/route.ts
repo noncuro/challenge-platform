@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createRedisClient } from "../utils";
+import { createRedisClient } from "../../utils";
 
 interface Template {
   id: string;

@@ -65,11 +65,11 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, challengeU
 };
 
 const fetchTemplates = async (): Promise<Template[]> => {
-  const response = await fetch('/api/templates');
+  const response = await fetch('/api/admin/templates');
   if (!response.ok) {
     throw new Error('Failed to fetch templates');
   }
-  return response.json();
+  return await response.json() as Template[];
 };
 
 const createChallenge = async (challengeData: CreateChallengeRequest) => {
@@ -86,6 +86,11 @@ const createChallenge = async (challengeData: CreateChallengeRequest) => {
   return await response.json() as { token: string }; // TODO
 };
 
+const validateEmail = (email: string) => {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(String(email).toLowerCase());
+};
+
 export const CreateChallengeForm = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -93,9 +98,7 @@ export const CreateChallengeForm = () => {
   const [challengeDescription, setChallengeDescription] = useState('');
   const [token, setToken] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
@@ -106,27 +109,12 @@ export const CreateChallengeForm = () => {
     mutationFn: createChallenge,
     onSuccess: (data) => {
       setToken(data.token);
-      setIsModalOpen(true);
+      setIsSuccessModalOpen(true);
     },
   });
-
-  const validateEmail = (email: string) => {
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return re.test(String(email).toLowerCase());
-  };
-
-  useEffect(() => {
-    if (email && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-    } else {
-      setEmailError('');
-    }
-    setIsFormValid(email !== '' && validateEmail(email) && duration > 0 && challengeDescription !== '');
-  }, [email, duration, challengeDescription]);
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isFormValid) {
+    if (isFormValid && durationParsed) {
       createChallengeMutation.mutate({
         email,
         duration: durationParsed,
@@ -134,7 +122,6 @@ export const CreateChallengeForm = () => {
       });
     }
   };
-
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const templateId = e.target.value;
     const template = templates.find(t => t.id === templateId);
@@ -164,7 +151,7 @@ export const CreateChallengeForm = () => {
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    setIsSuccessModalOpen(false);
     resetForm();
     router.push('/admin/challenges');
   };
@@ -193,6 +180,10 @@ export const CreateChallengeForm = () => {
     return [parsedDuration, null]
   }, [duration]);
 
+  const emailIsValid = !email || validateEmail(email)
+  const emailError = !emailIsValid && "Please enter a valid email address"
+  const isFormValid = email && emailIsValid && !durationError && !!challengeDescription
+
   const challengeUrl = `http://localhost:3000/?token=${token}&email=${email}`;
 
   return (
@@ -207,7 +198,7 @@ export const CreateChallengeForm = () => {
             onChange={(e) => setEmail(e.target.value)} 
             className={emailError ? 'border-red-500' : ''}
           />
-          {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+          {emailError && <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>}
         </div>
         <div>
           <div className="flex gap-2 items-center">
@@ -247,7 +238,7 @@ export const CreateChallengeForm = () => {
         </Button>
       </form>
       <SuccessModal
-        isOpen={isModalOpen}
+        isOpen={isSuccessModalOpen}
         onClose={handleCloseModal}
         challengeUrl={challengeUrl}
       />
