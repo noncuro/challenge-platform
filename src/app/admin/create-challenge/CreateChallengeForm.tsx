@@ -1,14 +1,16 @@
 'use client';
 
-import { Button, Input, Select } from "@/components/ui";
-import { useState, useEffect } from "react";
-import { formatDuration } from "../candidate/TimedSubmissionPlatform";
+import {Button, Input, Select} from "@/components/ui";
+import React, {useMemo, useState} from "react";
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
-import React from 'react';
 import 'react-markdown-editor-lite/lib/index.css';
-import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {useRouter} from 'next/navigation';
+import {useMutation} from '@tanstack/react-query';
+import {CreateChallengeRequest} from "@/app/api/challenge/create/route";
+import {useTemplates} from "@/state";
+import {formatDuration} from "@/utils";
+import {SuccessModal} from "@/app/admin/create-challenge/ChallengeCreatedModal";
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -20,129 +22,55 @@ interface Template {
   content: string;
 }
 
-interface SuccessModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  challengeUrl: string;
-}
 
-const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, challengeUrl }) => {
-  const [copied, setCopied] = useState(false);
-
-  if (!isOpen) return null;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(challengeUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-4">Challenge Created Successfully!</h2>
-        <p className="mb-4">Your challenge URL:</p>
-        <div className="flex items-center mb-4">
-          <input
-            type="text"
-            value={challengeUrl}
-            readOnly
-            className="flex-grow border rounded-l px-2 py-1"
-          />
-          <button
-            onClick={copyToClipboard}
-            className="bg-blue-500 text-white px-4 py-1 rounded-r hover:bg-blue-600"
-          >
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-        </div>
-        <Button onClick={onClose}>Close</Button>
-      </div>
-    </div>
-  );
-};
-
-const fetchTemplates = async (): Promise<Template[]> => {
-  const response = await fetch('/api/templates');
-  if (!response.ok) {
-    throw new Error('Failed to fetch templates');
-  }
-  return response.json();
-};
-
-const createChallenge = async (challengeData: { email: string; duration: number; challengeDescription: string }) => {
-  const response = await fetch('/api/challenge/create', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(challengeData),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create challenge');
-  }
-  return response.json();
+const validateEmail = (email: string) => {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(String(email).toLowerCase());
 };
 
 export const CreateChallengeForm = () => {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState("0");
   const [challengeDescription, setChallengeDescription] = useState('');
   const [token, setToken] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [durationError, setDurationError] = useState('');
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['templates'],
-    queryFn: fetchTemplates,
-  });
+  const { data: templates = [] } = useTemplates();
 
   const createChallengeMutation = useMutation({
-    mutationFn: createChallenge,
+    mutationFn: async (challengeData: CreateChallengeRequest) => {
+      const response = await fetch('/api/admin/challenge/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(challengeData),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create challenge' + await response.text());
+      }
+      return await response.json() as { token: string }; // TODO
+    },
     onSuccess: (data) => {
       setToken(data.token);
-      setIsModalOpen(true);
+      setIsSuccessModalOpen(true);
     },
+    onError: (error) => {
+        alert('Failed to create challenge: ' + error.message);
+    }
   });
-
-  const validateEmail = (email: string) => {
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return re.test(String(email).toLowerCase());
-  };
-
-  useEffect(() => {
-    if (email && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-    } else {
-      setEmailError('');
-    }
-
-    if (duration <= 0) {
-      setDurationError('Duration must be greater than 0');
-    } else {
-      setDurationError('');
-    }
-
-    setIsFormValid(email !== '' && validateEmail(email) && duration > 0 && challengeDescription !== '');
-  }, [email, duration, challengeDescription]);
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isFormValid) {
+    if (isFormValid && durationParsed) {
       createChallengeMutation.mutate({
         email,
-        duration,
+        duration: durationParsed,
         challengeDescription: selectedTemplate ? selectedTemplate.content : challengeDescription,
       });
     }
   };
-
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const templateId = e.target.value;
     const template = templates.find(t => t.id === templateId);
@@ -165,17 +93,45 @@ export const CreateChallengeForm = () => {
 
   const resetForm = () => {
     setEmail('');
-    setDuration(0);
+    setDuration("0");
     setChallengeDescription('');
     setSelectedTemplate(null);
     setToken('');
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    setIsSuccessModalOpen(false);
     resetForm();
     router.push('/admin/challenges');
   };
+
+  const [durationParsed, durationError] = useMemo(() => {
+    // If duration starts with =, it's a formula
+    if (duration.startsWith("=")){
+      const formula = duration.slice(1);
+      try {
+        const parsed = eval(formula);
+        if(typeof parsed === 'number' && !isNaN(parsed) && parsed > 0 && parsed === Math.floor(parsed))
+          return [parsed, null];
+
+        return [null, "Error: Invalid formula"];
+      } catch (error: any) {
+        return [null, "Error: Invalid formula"];
+      }
+    }
+    const parsedDuration = parseInt(duration);
+    if (isNaN(parsedDuration)) {
+      return [null, 'Duration must be a number'];
+    }
+    if (parsedDuration < 0) {
+      return [null, 'Duration must be greater than 0'];
+    }
+    return [parsedDuration, null]
+  }, [duration]);
+
+  const emailIsValid = !email || validateEmail(email)
+  const emailError = !emailIsValid && "Please enter a valid email address"
+  const isFormValid = email && emailIsValid && !durationError && !!challengeDescription
 
   const challengeUrl = `http://localhost:3000/?token=${token}&email=${email}`;
 
@@ -191,19 +147,19 @@ export const CreateChallengeForm = () => {
             onChange={(e) => setEmail(e.target.value)} 
             className={emailError ? 'border-red-500' : ''}
           />
-          {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+          {emailError && <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>}
         </div>
         <div>
           <div className="flex gap-2 items-center">
             <Input 
-              type="number" 
+              type="text"
               name="duration" 
               placeholder="Duration" 
               value={duration} 
-              onChange={(e) => setDuration(parseInt(e.target.value))} 
+              onChange={(e) => setDuration(e.target.value)}
               className={durationError ? 'border-red-500' : ''}
             />
-            <span>{formatDuration(duration)}</span>
+            <span>{formatDuration(durationParsed)}</span>
           </div>
           {durationError && <p className="text-red-500 text-sm mt-1">{durationError}</p>}
         </div>
@@ -231,7 +187,7 @@ export const CreateChallengeForm = () => {
         </Button>
       </form>
       <SuccessModal
-        isOpen={isModalOpen}
+        isOpen={isSuccessModalOpen}
         onClose={handleCloseModal}
         challengeUrl={challengeUrl}
       />

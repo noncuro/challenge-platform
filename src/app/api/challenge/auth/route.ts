@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createRedisClient } from "../utils";
-import { setAuthCookie, checkAuth } from "../utils/auth";
+import { createRedisClient } from "@/app/api/utils";
+import { setAuthCookie, checkAuth } from "../../utils/auth";
 
 export async function POST(request: Request) {
   const { email, authKey } = await request.json();

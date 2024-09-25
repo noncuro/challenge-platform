@@ -7,6 +7,7 @@ import { Button, Input } from '@/components/ui';
 import dynamic from 'next/dynamic';
 import 'react-markdown-editor-lite/lib/index.css';
 import ReactMarkdown from 'react-markdown';
+import { useTemplate } from '@/state';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -18,14 +19,9 @@ interface Template {
     content: string;
 }
 
-const fetchTemplate = async (id: string): Promise<Template> => {
-    const response = await fetch(`/api/templates/${id}`);
-    if (!response.ok) throw new Error('Failed to fetch template');
-    return response.json();
-};
 
 const updateTemplate = async (template: Template): Promise<void> => {
-    const response = await fetch(`/api/templates`, {
+    const response = await fetch(`/api/admin/templates`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(template),
@@ -33,22 +29,19 @@ const updateTemplate = async (template: Template): Promise<void> => {
     if (!response.ok) throw new Error('Failed to update template');
 };
 
-const EditTemplate: React.FC = () => {
+const EditTemplate = () => {
     const searchParams = useSearchParams();
     const id = searchParams?.get('id') || '';
     const queryClient = useQueryClient();
+    const router = useRouter();
 
-    const { data: template, isLoading, error } = useQuery({
-        queryKey: ['template', id],
-        queryFn: () => fetchTemplate(id),
-        enabled: !!id,
-    });
+    const { data: template, isLoading, error } = useTemplate({templateId: id})
 
     const mutation = useMutation({
         mutationFn: updateTemplate,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['template', id] });
-            window.location.href = '/admin';
+            router.push('/admin');
         },
     });
 

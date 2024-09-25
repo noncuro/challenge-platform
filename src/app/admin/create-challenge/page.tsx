@@ -1,9 +1,9 @@
 'use client';
 
-import { CreateChallengeForm } from '../createChallenge';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import 'react-markdown-editor-lite/lib/index.css';
 import React from 'react';
+import {CreateChallengeForm} from "@/app/admin/create-challenge/CreateChallengeForm";
 
 const queryClient = new QueryClient();
 

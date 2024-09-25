@@ -1,25 +1,24 @@
-export const dynamic = "force-dynamic";
-
+import { checkAdminAuth } from "@/app/api/utils/auth";
 import { NextResponse } from "next/server";
-import { createRedisClient, getChallengeStatusFromRedis } from "../../utils";
-import bcrypt from "bcrypt";
+import {
+  createRedisClient,
+  getChallengeStatusFromRedis,
+} from "@/app/api/utils";
 import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const redisClient = createRedisClient();
 
-  try {
-    // Auth by checking the redis key 'admin' and see if the token in the cookie matches
-    const admin = await redisClient.get("admin");
-    const adminAuthKey = cookies().get("adminAuthKey")?.value;
-    if (
-      !admin ||
-      !adminAuthKey ||
-      !(await bcrypt.compare(adminAuthKey, admin))
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const adminAuthKey = cookies().get("adminAuthKey")?.value;
+  if (!(await checkAdminAuth(adminAuthKey, redisClient))) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+    });
+  }
 
+  try {
     const candidateKeys = await redisClient.keys("challenge:*");
     const candidates = await Promise.all(
       candidateKeys.map(async (key) => {

@@ -7,7 +7,7 @@ export const Login = () => {
     const [authKey, setAuthKey] = useState('');
   
     const handleLogin = () => {
-      fetch('/api/auth/admin', {
+      fetch('/api/admin/auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
