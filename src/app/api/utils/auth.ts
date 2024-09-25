@@ -29,9 +29,10 @@ export async function checkAuth(
 }
 
 export async function checkAdminAuth(
-  authKey: string,
+  authKey: string | undefined = undefined,
   redis: Redis,
 ): Promise<boolean> {
+  if (!authKey) return false;
   const adminAuthKey = await redis.get("admin");
   if (!adminAuthKey) return false;
   return await bcrypt.compare(authKey, adminAuthKey);
