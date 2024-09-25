@@ -133,7 +133,7 @@ export const CreateChallengeForm = () => {
   const emailError = !emailIsValid && "Please enter a valid email address"
   const isFormValid = email && emailIsValid && !durationError && !!challengeDescription
 
-  const challengeUrl = `http://localhost:3000/?token=${token}&email=${email}`;
+  const challengeUrl = `${window.location.origin}/?token=${token}&email=${email}`;
 
   return (
     <div className="max-w-3xl mx-auto">
