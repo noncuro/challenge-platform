@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Input, Select } from "@/components/ui";
-import { useState, useEffect } from "react";
+import {useState, useEffect, useMemo} from "react";
 import { formatDuration } from "../candidate/TimedSubmissionPlatform";
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
@@ -9,6 +9,7 @@ import React from 'react';
 import 'react-markdown-editor-lite/lib/index.css';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {CreateChallengeRequest} from "@/app/api/challenge/create/route";
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -71,7 +72,7 @@ const fetchTemplates = async (): Promise<Template[]> => {
   return response.json();
 };
 
-const createChallenge = async (challengeData: { email: string; duration: number; challengeDescription: string }) => {
+const createChallenge = async (challengeData: CreateChallengeRequest) => {
   const response = await fetch('/api/challenge/create', {
     method: 'POST',
     headers: {
@@ -82,20 +83,18 @@ const createChallenge = async (challengeData: { email: string; duration: number;
   if (!response.ok) {
     throw new Error('Failed to create challenge');
   }
-  return response.json();
+  return await response.json() as { token: string }; // TODO
 };
 
 export const CreateChallengeForm = () => {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState("0");
   const [challengeDescription, setChallengeDescription] = useState('');
   const [token, setToken] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const [durationError, setDurationError] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
 
   const { data: templates = [] } = useQuery({
@@ -122,13 +121,6 @@ export const CreateChallengeForm = () => {
     } else {
       setEmailError('');
     }
-
-    if (duration <= 0) {
-      setDurationError('Duration must be greater than 0');
-    } else {
-      setDurationError('');
-    }
-
     setIsFormValid(email !== '' && validateEmail(email) && duration > 0 && challengeDescription !== '');
   }, [email, duration, challengeDescription]);
 
@@ -137,7 +129,7 @@ export const CreateChallengeForm = () => {
     if (isFormValid) {
       createChallengeMutation.mutate({
         email,
-        duration,
+        duration: durationParsed,
         challengeDescription: selectedTemplate ? selectedTemplate.content : challengeDescription,
       });
     }
@@ -165,7 +157,7 @@ export const CreateChallengeForm = () => {
 
   const resetForm = () => {
     setEmail('');
-    setDuration(0);
+    setDuration("0");
     setChallengeDescription('');
     setSelectedTemplate(null);
     setToken('');
@@ -176,6 +168,30 @@ export const CreateChallengeForm = () => {
     resetForm();
     router.push('/admin/challenges');
   };
+
+  const [durationParsed, durationError] = useMemo(() => {
+    // If duration starts with =, it's a formula
+    if (duration.startsWith("=")){
+      const formula = duration.slice(1);
+      try {
+        const parsed = eval(formula);
+        if(typeof parsed === 'number' && !isNaN(parsed) && parsed > 0 && parsed === Math.floor(parsed))
+          return [parsed, null];
+
+        return [null, "Error: Invalid formula"];
+      } catch (error: any) {
+        return [null, "Error: Invalid formula"];
+      }
+    }
+    const parsedDuration = parseInt(duration);
+    if (isNaN(parsedDuration)) {
+      return [null, 'Duration must be a number'];
+    }
+    if (parsedDuration < 0) {
+      return [null, 'Duration must be greater than 0'];
+    }
+    return [parsedDuration, null]
+  }, [duration]);
 
   const challengeUrl = `http://localhost:3000/?token=${token}&email=${email}`;
 
@@ -196,14 +212,14 @@ export const CreateChallengeForm = () => {
         <div>
           <div className="flex gap-2 items-center">
             <Input 
-              type="number" 
+              type="text"
               name="duration" 
               placeholder="Duration" 
               value={duration} 
-              onChange={(e) => setDuration(parseInt(e.target.value))} 
+              onChange={(e) => setDuration(e.target.value)}
               className={durationError ? 'border-red-500' : ''}
             />
-            <span>{formatDuration(duration)}</span>
+            <span>{formatDuration(durationParsed)}</span>
           </div>
           {durationError && <p className="text-red-500 text-sm mt-1">{durationError}</p>}
         </div>

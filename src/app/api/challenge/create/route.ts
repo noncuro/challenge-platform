@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
+import { ChallengeStatus } from "@/app/types";
 
 export interface CreateChallengeRequest {
   email: string;
