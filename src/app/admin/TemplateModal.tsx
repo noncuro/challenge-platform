@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui';
 import ReactMarkdown from 'react-markdown';
 import dynamic from 'next/dynamic';
+import { useTemplates } from '@/state';
+import { useQueryClient } from '@tanstack/react-query';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -21,28 +23,12 @@ interface TemplateModalProps {
 }
 
 export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose }) => {
-    const [templates, setTemplates] = useState<Template[]>([]);
+    const queryClient = useQueryClient()
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState('');
 
-    useEffect(() => {
-        fetchTemplates();
-    }, []);
-
-    const fetchTemplates = async () => {
-        try {
-            const response = await fetch('/api/admin/templates');
-            if (response.ok) {
-                const data = await response.json();
-                setTemplates(data);
-            } else {
-                console.error('Failed to fetch templates');
-            }
-        } catch (error) {
-            console.error('Error fetching templates:', error);
-        }
-    };
+    const {data: templates = []} = useTemplates()
 
     const handleSaveTemplate = async () => {
         if (!selectedTemplate) return;
@@ -57,7 +43,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose })
             });
 
             if (response.ok) {
-                await fetchTemplates();
+                queryClient.invalidateQueries({queryKey: ["templates"]})
                 setIsEditing(false);
             } else {
                 console.error('Failed to save template');

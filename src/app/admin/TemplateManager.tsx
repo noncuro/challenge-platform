@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/compo
 import dynamic from 'next/dynamic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MarkdownViewer } from '@/components/MarkdownViewer';
+import { useTemplates } from '@/state';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -14,13 +15,6 @@ interface Template {
   content: string;
 }
 
-const fetchTemplates = async (): Promise<Template[]> => {
-  const response = await fetch('/api/admin/templates');
-  if (!response.ok) {
-    throw new Error('Failed to fetch templates');
-  }
-  return await response.json();
-};
 
 const updateTemplate = async (template: Template): Promise<Template> => {
   const response = await fetch('/api/admin/templates', {

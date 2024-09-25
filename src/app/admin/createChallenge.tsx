@@ -10,6 +10,7 @@ import 'react-markdown-editor-lite/lib/index.css';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {CreateChallengeRequest} from "@/app/api/challenge/create/route";
+import { useTemplates } from "@/state";
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -64,13 +65,6 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, challengeU
   );
 };
 
-const fetchTemplates = async (): Promise<Template[]> => {
-  const response = await fetch('/api/admin/templates');
-  if (!response.ok) {
-    throw new Error('Failed to fetch templates');
-  }
-  return await response.json() as Template[];
-};
 
 const createChallenge = async (challengeData: CreateChallengeRequest) => {
   const response = await fetch('/api/challenge/create', {
@@ -100,10 +94,7 @@ export const CreateChallengeForm = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['templates'],
-    queryFn: fetchTemplates,
-  });
+  const { data: templates = [] } = useTemplates();
 
   const createChallengeMutation = useMutation({
     mutationFn: createChallenge,

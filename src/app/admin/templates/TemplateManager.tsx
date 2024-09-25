@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MarkdownViewer } from '@/components/MarkdownViewer';
+import { useTemplates } from '@/state';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -16,14 +17,6 @@ interface Template {
   name: string;
   content: string;
 }
-
-const fetchTemplates = async (): Promise<Template[]> => {
-    const response = await fetch('/api/admin/templates');
-    if (!response.ok) {
-        throw new Error('Failed to fetch templates');
-    }
-    return response.json();
-};
 
 const updateTemplate = async (template: Template): Promise<Template> => {
     const response = await fetch('/api/admin/templates', {
@@ -57,10 +50,7 @@ export function TemplateManager() {
     const [newTemplateName, setNewTemplateName] = useState('');
     const [newTemplateContent, setNewTemplateContent] = useState('');
 
-    const { data: templates = [], isLoading, error } = useQuery({
-        queryKey: ['templates'],
-        queryFn: fetchTemplates,
-    });
+    const { data: templates = [], isLoading, error } = useTemplates()
 
     const updateTemplateMutation = useMutation({
         mutationFn: updateTemplate,

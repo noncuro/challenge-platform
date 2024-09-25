@@ -7,6 +7,7 @@ import { Button, Input } from '@/components/ui';
 import dynamic from 'next/dynamic';
 import 'react-markdown-editor-lite/lib/index.css';
 import ReactMarkdown from 'react-markdown';
+import { useTemplate } from '@/state';
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
@@ -38,17 +39,13 @@ const EditTemplate: React.FC = () => {
     const id = searchParams?.get('id') || '';
     const queryClient = useQueryClient();
 
-    const { data: template, isLoading, error } = useQuery({
-        queryKey: ['template', id],
-        queryFn: () => fetchTemplate(id),
-        enabled: !!id,
-    });
+    const { data: template, isLoading, error } = useTemplate({templateId: id})
 
     const mutation = useMutation({
         mutationFn: updateTemplate,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['template', id] });
-            window.location.href = '/admin';
+            window.location.href = '/admin'; // TODO: useRouter
         },
     });
 

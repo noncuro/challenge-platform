@@ -18,3 +18,15 @@ export const useTemplates = () => {
     },
   });
 };
+
+export const useTemplate = ({ templateId }: { templateId: string }) => {
+  return useQuery({
+    enabled: !!templateId,
+    queryKey: ["template", templateId],
+    queryFn: async (): Promise<Template> => {
+      const response = await fetch(`/api/admin/templates/${templateId}`);
+      if (!response.ok) throw new Error("Failed to fetch template");
+      return response.json();
+    },
+  });
+};
