@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { ChallengeStatus } from "@/app/types";
+import { checkAdminAuth } from "@/app/api/utils/auth";
 
 export interface CreateChallengeRequest {
   email: string;
@@ -19,14 +20,12 @@ export async function POST(req: Request) {
   const redisClient = createRedisClient();
 
   // Auth by checking the redis key 'admin' and see if the token in the cookie matches
-  const admin = await redisClient.get("admin");
   const adminAuthKey = cookies().get("adminAuthKey")?.value;
-  if (!admin || !adminAuthKey || !(await bcrypt.compare(adminAuthKey, admin))) {
+  if (!(await checkAdminAuth(adminAuthKey, redisClient))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
     });
   }
-
   // Check if a challenge status already exists for this email
   const existingStatus = await redisClient.get(`challenge:${email}`);
   if (existingStatus) {

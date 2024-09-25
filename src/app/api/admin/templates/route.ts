@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRedisClient } from "../../utils";
+import { checkAdminAuth } from "@/app/api/utils/auth";
+import { cookies } from "next/headers";
 
 interface Template {
   id: string;
@@ -9,6 +11,13 @@ interface Template {
 
 export async function GET() {
   const redisClient = createRedisClient();
+
+  const adminAuthKey = cookies().get("adminAuthKey")?.value;
+  if (!(await checkAdminAuth(adminAuthKey, redisClient))) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+    });
+  }
 
   try {
     const templatesString = await redisClient.get("templates");
