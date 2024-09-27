@@ -72,7 +72,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose })
             });
 
             if (response.ok) {
-                await fetchTemplates();
+                queryClient.invalidateQueries({queryKey: ["templates"]})
                 setNewTemplateName('');
                 setSelectedTemplate(newTemplate);
                 setIsEditing(true);

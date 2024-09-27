@@ -7,10 +7,10 @@ import ReactMarkdown from 'react-markdown';
 import 'react-markdown-editor-lite/lib/index.css';
 import {useRouter} from 'next/navigation';
 import {useMutation} from '@tanstack/react-query';
-import {CreateChallengeRequest} from "@/app/api/challenge/create/route";
 import {useTemplates} from "@/state";
 import {formatDuration} from "@/utils";
 import {SuccessModal} from "@/app/admin/create-challenge/ChallengeCreatedModal";
+import {CreateChallengeRequest} from "@/app/api/admin/challenge/create/route";
 
 const MdEditor = dynamic(() => import('react-markdown-editor-lite'), {
   ssr: false
