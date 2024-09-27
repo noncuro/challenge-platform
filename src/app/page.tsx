@@ -16,8 +16,7 @@ export default async function Home({searchParams}: {searchParams: {token: string
 
   if (!token || !email) {
     return <div className="p-4 min-h-full">
-      <h1 className="text-2xl font-bold mb-4">Timed Submission Platform</h1>
-      <p>Come back when you have a token</p>
+      <p>Nothing public here yet. Come back when you have a token</p>
       </div>
   }
 
