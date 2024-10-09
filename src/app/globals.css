@@ -110,3 +110,11 @@ body {
 .bg-white {
   background-color: rgb(var(--background-start-rgb));
 }
+
+ol {
+  list-style: decimal;
+}
+
+ul {
+  list-style: disc;
+}
